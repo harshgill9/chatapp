@@ -1,0 +1,26 @@
+templates/search.html
+{% extends 'base.html' %} {% block content %}
+<h2>Search Users</h2>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Search</button>
+</form>
+
+{% if users %}
+  <h3>Results:</h3>
+  <ul>
+    {% for user in users %}
+      <li>
+        {{ user.username }} - 
+        {% if user.is_online %}
+          🟢 Online
+        {% else %}
+          ⚪ Offline
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+{% endblock %}

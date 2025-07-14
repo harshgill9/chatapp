@@ -1,0 +1,31 @@
+<!-- {% extends 'base.html' %} {% block content %}
+<div class="max-w-xl mx-auto mt-10 bg-white shadow-md rounded-lg p-6">
+  <h2 class="text-2xl font-semibold text-gray-800 mb-4">➕ Create Chat Room</h2>
+  <form method="post" class="space-y-4">
+    {% if messages %}
+    <div class="max-w-xl mx-auto my-4 space-y-2">
+      {% for message in messages %}
+      <div class="px-4 py-2 rounded {{ message.tags }} bg-red-100 text-red-800">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %} {% csrf_token %}
+    <div>
+      <label for="room_name" class="block text-gray-700 font-medium mb-1">Room Name</label>
+      <input
+        type="text"
+        name="room_name"
+        id="room_name"
+        placeholder="Enter room name"
+        required
+        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+    </div>
+    <button
+      type="submit"
+      class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200"
+    >
+      Create Room
+    </button>
+  </form>
+</div>
+{% endblock %} -->

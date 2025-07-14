@@ -1,0 +1,173 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{% block title %}Chat App{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-md">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+        <div class="text-xl font-semibold text-indigo-600">
+          <a href="{% url 'home' %}">💬 ChatApp</a>
+        </div>
+        <div class="space-x-4 text-sm sm:text-base">
+          {% if user.is_staff %}
+          <a href="{% url 'admin_dashboard' %}" class="text-gray-700 hover:text-indigo-600">📊 Admin</a>
+          {% endif %}
+          {% if user.is_authenticated %}
+          <a href="{% url 'profile' %}" class="text-gray-700 hover:text-indigo-600">👤 Hi, {{ user.first_name }}</a>
+          <a href="{% url 'logout' %}" class="text-red-600 hover:text-red-800">🚪 Logout</a>
+          <a href="{% url 'about' %}" class="text-gray-600 hover:text-indigo-600 font-medium">About</a>
+          {% else %}
+          <a href="{% url 'login' %}" class="text-indigo-600 hover:text-indigo-800">🔑 Login</a>
+          <a href="{% url 'signup' %}" class="text-indigo-600 hover:text-indigo-800">👤 Signup</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow">
+      <div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        {% block content %}{% endblock %}
+        <div id="chat-box" class="space-y-2 mt-4"></div>
+        <p id="typing-status" class="text-sm text-gray-500 italic mt-2 text-center"></p>
+      </div>
+      <audio id="notification-sound" src="{% static 'sounds/notification.mp3' %}" preload="auto"></audio>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white text-center text-sm py-4 text-gray-500 shadow-inner">
+      © {{ year|default:2025 }} ChatApp. All rights reserved.
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+      const currentUsername = "{{ request.user.username|escapejs }}";
+      const currentName = "{{ request.user.first_name|escapejs }}";
+      const chatBox = document.getElementById("chat-box");
+      const messageInput = document.getElementById("message-input");
+      const roomSlug = "{{ selected_room.slug|default:'' }}";
+      const privateRoomSlug = "{{ private_room.room_slug|default:'' }}";
+      const isPrivateChat = Boolean("{{ private_room.room_slug|default:'' }}");
+      const activeRoomSlug = isPrivateChat ? privateRoomSlug : roomSlug;
+      const typingTimeout = 3000;
+      let typingTimer;
+
+      if (activeRoomSlug) {
+        const chatSocket = new WebSocket(
+          (window.location.protocol === "https:" ? "wss://" : "ws://") +
+          window.location.host +
+          (isPrivateChat ? "/ws/private/" : "/ws/chat/") +
+          activeRoomSlug + "/"
+        );
+
+        chatSocket.onmessage = function (e) {
+          const data = JSON.parse(e.data);
+
+          if (data.type === "typing" && data.username !== currentUsername) {
+            showTypingIndicator(data.name);
+            return;
+          }
+
+          if (data.type === "stop_typing" && data.username !== currentUsername) {
+            removeTypingIndicator();
+            return;
+          }
+
+          if (data.type === "notification") {
+            const notificationSound = document.getElementById("notification-sound");
+            notificationSound.play();
+            return;
+          }
+
+          if (!data.message) return;
+
+          let messageHtml = "";
+
+          if (data.username === "System") {
+            messageHtml = `
+            <div class="text-center">
+              <p class="text-gray-500 italic">${data.message}</p>
+            </div>`;
+          } else if (data.username === currentUsername) {
+            messageHtml = `
+              <div class="text-right">
+                <div class="inline-block bg-blue-100 text-blue-900 px-3 py-2 rounded-lg mb-1">
+                  <div class="flex justify-between gap-10 items-center text-sm">
+                    <p class="font-semibold">${currentUsername}</p>
+                    <small class="text-gray-500 text-xs">${new Date().toLocaleTimeString([], {hour: "2-digit",minute: "2-digit"})}</small>
+                  </div>
+                  <p>${data.message}</p>
+                </div>
+              </div>`;
+          } else {
+            messageHtml = `
+              <div class="text-left">
+                <div class="inline-block bg-gray-100 text-gray-800 px-3 py-2 rounded-lg mb-1">
+                  <div class="flex justify-between gap-10 items-center text-sm">
+                    <p class="font-semibold">${data.name}</p>
+                    <small class="text-gray-500 text-xs">${new Date().toLocaleTimeString([], {hour: "2-digit",minute: "2-digit"})}</small>
+                  </div>
+                  <p>${data.message}</p>
+                </div>
+              </div>`;
+          }
+
+          chatBox.innerHTML += messageHtml;
+          chatBox.scrollTop = chatBox.scrollHeight;
+          removeTypingIndicator(); // typing status remove after message
+        };
+
+        chatSocket.onclose = function () {
+          console.error("Chat socket closed unexpectedly");
+        };
+
+        document.getElementById("chat-form").onsubmit = function (e) {
+          e.preventDefault();
+          const message = messageInput.value;
+          if (message.trim()) {
+            chatSocket.send(JSON.stringify({
+              type: "chat",
+              message, 
+              username: currentUsername,
+              name: currentName
+            }));
+            messageInput.value = "";
+          }
+        };
+
+        messageInput.addEventListener("input", () => {
+          chatSocket.send(JSON.stringify({
+            type: "typing",
+            username: currentUsername,
+            name: currentName
+          }));
+
+          clearTimeout(typingTimer);
+          typingTimer = setTimeout(() => {
+            chatSocket.send(JSON.stringify({
+              type: "stop_typing",
+              username: currentUsername
+            }));
+          }, typingTimeout);
+        });
+
+        function showTypingIndicator(name) {
+          const typingStatus = document.getElementById("typing-status");
+          typingStatus.textContent = `${name} is typing...`;
+        }
+
+        function removeTypingIndicator() {
+          const typingStatus = document.getElementById("typing-status");
+          typingStatus.textContent = "";
+        }
+      }
+    </script>
+  </body>
+</html>

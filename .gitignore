@@ -1,0 +1,7 @@
+_.txt
+venv
+
+__pycache__/
+*.pyc
+
+staticfiles

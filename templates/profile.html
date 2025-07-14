@@ -1,0 +1,102 @@
+{% extends 'base.html' %} {% block content %}
+
+<!-- 👇 Profile Picture Block Add yahan -->
+  <div class="flex items-center space-x-4 mb-6">
+      {% if request.user.userprofile.profile_pic %}
+        <img src="{{ request.user.userprofile.profile_pic.url }}" alt="Profile Picture" class="w-20 h-20 rounded-full object-cover shadow">
+      {% else %}
+        <div class="w-20 h-20 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 text-xl">
+          {{ request.user.username|first|upper }}
+        </div>
+      {% endif %}
+      <div>
+        <a href="{% url 'update_profile_pic' %}" class="text-indigo-600 hover:underline">
+          ✏️ Update Profile Picture
+        </a>
+      </div>
+  </div>
+
+<div class="p-6 max-w-4xl mx-auto">
+  <h2 class="text-2xl font-semibold text-gray-800">👤 {{ request.user.first_name }} Profile</h2>
+  <!-- <h6 class="text-gray-600 font-bold mb-6">Username: {{ request.user.username }}</h6> -->
+
+  <!-- Created Rooms -->
+  <div class="mb-8">
+    <h3 class="text-xl font-semibold text-blue-600 mb-2">🏠 Created Rooms</h3>
+    <ul class="space-y-2">
+      {% for room in rooms %}
+      <li class="group flex justify-between items-center bg-blue-100">
+        <a href="/?room={{ room.name }}" class="block px-4 py-2 text-blue-700 rounded hover:bg-blue-200 transition">
+          {{ room.name }}
+        </a>
+        <form
+          action="{% url 'delete_room' room.id %}?next=profile"
+          method="post"
+          onsubmit="return confirm('Are you sure you want to delete this room?');"
+          class="inline mt-1 mr-2"
+        >
+          {% csrf_token %}
+
+          <button
+            type="submit"
+            title="Delete room"
+            class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+          </button>
+        </form>
+      </li>
+      {% empty %}
+      <li class="text-gray-500">No rooms created yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <!-- Recent Messages -->
+  <div>
+    <h3 class="text-xl font-semibold text-green-600 mb-2">💬 Recent Messages</h3>
+    <ul class="space-y-3 max-h-96 overflow-y-scroll">
+      {% for msg in messages %}
+      <li class="bg-gray-50 p-3 rounded shadow-sm">
+        <div class="flex justify-between items-center">
+          <span class="font-medium text-gray-800">
+            In <a href="/?room={{ msg.room.name }}" class="text-indigo-600">{{ msg.room.name }}</a>
+          </span>
+          <small class="text-gray-400">{{ msg.timestamp|date:"M d, H:i" }}</small>
+        </div>
+        <p class="text-gray-700 mt-1">{{ msg.content }}</p>
+      </li>
+      {% empty %}
+      <li class="text-gray-500">No messages yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="mt-8">
+    <a href="{% url 'home' %}" class="text-blue-600 hover:underline">⬅ Back to Home</a>
+  </div>
+  
+  <!-- Delete Account Button -->
+  <form action="{% url 'delete_account' %}" method="post" class="mt-4">
+    {% csrf_token %}
+    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+      🗑️ Delete My Account
+    </button>
+  </form>
+
+   
+  <!-- 👆 End of Profile Picture Block -->
+
+  <!-- <h2 class="text-2xl font-semibold text-gray-800">👤 {{ request.user.first_name }} Profile</h2> -->
+  <!-- <h6 class="text-gray-600 font-semibold mb-6">Username: {{ request.user.username }}</h6> -->
+
+
+</div>
+{% endblock %}

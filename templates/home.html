@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="flex h-[78vh] border rounded-lg overflow-hidden shadow-sm">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-white border-r overflow-y-auto">
+    <div class="p-2 border-b">
+      <h2 class="text-xl font-semibold text-indigo-600">👋 Welcome, {{ request.user.first_name }}</h2>
+      <div class="mt-4 text-sm text-gray-600">
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Search users or enter room name..."
+          class="w-full px-3 py-2 border rounded focus:outline-indigo-500"
+        />
+        <div class="mt-2 flex gap-2">
+          <button id="search-user-btn" class="w-1/2 bg-green-600 text-white py-2 rounded hover:bg-green-700">
+            🔍 Search User
+          </button>
+          <button id="create-room-btn" class="w-1/2 bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700">
+            ➕ Create Room
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-4">
+      <h3 class="text-sm font-medium text-gray-500 mb-2">Available Users</h3>
+      <ul class="space-y-2">
+        {% for user in users %}
+        <a
+          href="/?chat={{ user.username }}"
+          class="block px-4 py-2 rounded text-gray-700 flex items-center justify-between group bg-indigo-50 hover:bg-indigo-200"
+        >
+          <span>{{ user.first_name|default:user.username }}</span>
+          {% if user.userprofile.is_online %}
+            <span class="text-green-500 text-sm">🟢</span>
+          {% else %}
+            <span class="text-gray-400 text-sm">⚪</span>
+          {% endif %}
+        </a>
+        {% empty %}
+        <li class="text-gray-400 text-sm">No users available</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="px-4">
+      <h3 class="text-sm font-medium text-gray-500 mb-2">Available Rooms</h3>
+      <ul class="space-y-2">
+        {% for room in rooms %}
+        <a
+          href="/?room={{ room.slug }}"
+          class="block px-4 py-2 rounded text-gray-700 flex items-center justify-between group bg-indigo-50 hover:bg-indigo-200"
+        >
+          {{ room.name }}
+          {% if room.created_by == request.user %}
+          <form
+            action="{% url 'delete_room' room.id %}?next=home"
+            method="post"
+            onsubmit="return confirm('Are you sure you want to delete this room?');"
+            class="inline mt-1"
+          >
+            {% csrf_token %}
+            <button
+              type="submit"
+              title="Delete room"
+              class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+            </button>
+          </form>
+          {% endif %}
+        </a>
+        {% empty %}
+        <li class="text-gray-400 text-sm">No rooms available</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </aside>
+
+  <!-- Main Chat Display -->
+  <main class="flex-1 px-4 bg-gray-50 flex flex-col">
+    {% if selected_room or private_room %}
+      {% if selected_room %}
+        <h2 class="text-xl font-bold my-2">Room: {{ selected_room.name }}</h2>
+      {% elif selected_user %}
+        <h2 class="text-xl font-bold my-2 flex items-center gap-2">
+          Chat with: {{ selected_user.first_name }}
+          {% if selected_user_status %}
+            <span class="text-green-500 text-sm">🟢 Online</span>
+          {% else %}
+            <span class="text-gray-400 text-sm">⚪ Offline</span>
+          {% endif %}
+        </h2>
+      {% endif %}
+
+      <div class="flex flex-col justify-between overflow-y-auto h-full mb-4">
+        
+        <div id="chat-box" class="border p-4 flex-1 overflow-y-scroll bg-white rounded mb-2 space-y-2"></div>
+        <p id="typing-status" class="text-sm text-blue-500 italic text-left px-2 pb-1"></p>
+
+        <form id="chat-form" class="flex gap-2">
+          <input
+            type="text"
+            id="message-input"
+            class="flex-1 border px-4 py-2 rounded"
+            placeholder="Type a message..."
+            autocomplete="off"
+            required
+          />
+          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Send</button>
+        </form>
+      </div>
+    {% elif error_message %}
+      {% for err in error_message %}
+      <p class="text-red-500 text-center my-6">{{ err }}</p>
+      <a href="." class="block text-center text-indigo-500 hover:underline">Go to Home</a>
+      {% endfor %}
+    {% else %}
+    <div>
+      <h2 class="text-2xl font-semibold text-gray-700 my-2">Select a Room</h2>
+      <p class="text-gray-500">Click on a chat room from the left sidebar to start messaging.</p>
+    </div>
+    {% endif %}
+  </main>
+</div>
+
+<script>
+  const searchInput = document.getElementById("search-input");
+  const searchUserBtn = document.getElementById("search-user-btn");
+  const createRoomBtn = document.getElementById("create-room-btn");
+
+  const users = [...document.querySelectorAll("ul.space-y-2:first-of-type a span:first-child")].map(el => el.textContent.trim().toLowerCase());
+  const rooms = [...document.querySelectorAll("ul.space-y-2:last-of-type a")].map(el => el.textContent.trim().toLowerCase());
+
+  searchUserBtn.addEventListener("click", () => {
+    const inputVal = searchInput.value.trim().toLowerCase();
+    if (!inputVal) return alert("Please enter a user name");
+
+    const matchedUser = users.find(user => user.includes(inputVal));
+    if (matchedUser) {
+      const userLink = [...document.querySelectorAll("ul.space-y-2:first-of-type a")].find(link =>
+        link.textContent.trim().toLowerCase().includes(inputVal)
+      );
+      if (userLink) {
+        userLink.click();
+      }
+    } else {
+      alert("User not found");
+    }
+  });
+
+  createRoomBtn.addEventListener("click", () => {
+    const roomName = searchInput.value.trim();
+    if (!roomName) return alert("Please enter a room name");
+
+    if (rooms.includes(roomName.toLowerCase())) {
+      return alert("Room already exists!");
+    }
+
+    fetch("/create_room_ajax/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": "{{ csrf_token }}"
+      },
+      body: JSON.stringify({ name: roomName })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        window.location.href = `/?room=${data.slug}`;
+      } else {
+        alert(data.error || "Room creation failed");
+      }
+    });
+  });
+</script>
+{% endblock %}
