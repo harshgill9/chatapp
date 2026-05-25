@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Admin Chat - {{ room.name }}{% endblock %}
+{% block content %}
+
+<div class="flex flex-col h-[85vh] max-w-6xl mx-auto bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-xl rounded-2xl overflow-hidden mt-6">
+
+  <!-- 🟣 Header -->
+  <div class="flex items-center justify-between p-4 bg-indigo-700 text-white">
+    <div class="flex items-center gap-2">
+      <h2 class="text-xl font-semibold flex items-center gap-2">
+        🛠️ Admin Chat Review:
+        <span class="text-indigo-200">{{ room.name }}</span>
+      </h2>
+    </div>
+
+    <!-- 🔘 Buttons -->
+    <div class="flex items-center gap-3">
+      <button 
+        onclick="deleteAllMessages({{ room.id }})"
+        class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition text-sm font-semibold"
+      >
+        🗑️ Delete All
+      </button>
+      <a href="{% url 'admin_dashboard' %}" class="bg-white text-indigo-700 px-3 py-1 rounded hover:bg-gray-100 transition">
+        ← Back to Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- 💬 Chat Messages -->
+  <div id="chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-gray-800">
+    {% if messages %}
+      {% for msg in messages %}
+        <div class="flex {% if msg.user == request.user %}justify-end{% else %}justify-start{% endif %}">
+          <div class="relative max-w-[75%] group/message">
+
+            <!-- 💭 Message Bubble -->
+            <div 
+              class="{% if msg.user == request.user %}bg-indigo-500 text-white{% else %}bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100{% endif %}
+                     px-4 py-2 rounded-2xl break-words shadow-sm transition transform hover:scale-[1.02] relative">
+              <strong>{{ msg.user.username }}</strong>: {{ msg.content }}
+              <span class="text-xs text-gray-100 dark:text-gray-300 block text-right mt-1">{{ msg.timestamp|date:"H:i" }}</span>
+
+              <!-- 🗑️ Delete Button (only visible on hover) -->
+              <div 
+                class="absolute top-1/2 transform -translate-y-1/2 opacity-0 group-hover/message:opacity-100 transition-opacity duration-200
+                       {% if msg.user == request.user %}left-[-75px]{% else %}right-[-75px]{% endif %}">
+                <form method="POST" action="{% url 'delete_message' msg.id %}" onsubmit="return confirmDelete(this)" class="inline">
+                  {% csrf_token %}
+                  <button 
+                    type="submit" 
+                    class="text-red-500 bg-white dark:bg-gray-700 border border-red-400 hover:bg-red-100 
+                           dark:hover:bg-red-600 dark:hover:text-gray-100 text-sm font-semibold px-2 py-1 rounded-full shadow-md transition"
+                    title="Delete message"
+                  >
+                    🗑️ Delete
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-center text-gray-500 mt-10">No messages found in this chat.</p>
+    {% endif %}
+  </div>
+
+  <!-- 🔒 Footer -->
+  <div class="p-4 bg-gray-100 dark:bg-gray-800 border-t dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300 text-center">
+    🔒 You are viewing as <strong>Admin</strong>. Sending messages is disabled.
+  </div>
+</div>
+
+<script>
+  // ✅ Individual Delete
+  function confirmDelete(form) {
+    if (confirm("Delete this message?")) {
+      fetch(form.action, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": form.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          form.closest('.flex').remove();
+          alert(data.message || "✅ Message deleted successfully!");
+        } else {
+          alert(data.message || "❌ Failed to delete message");
+        }
+      })
+      .catch(err => console.error("Delete error:", err));
+    }
+    return false;
+  }
+
+  // ✅ Delete All Messages
+  function deleteAllMessages(roomId) {
+    if (confirm("⚠️ Delete ALL messages from this room?")) {
+      fetch(`/delete-all-messages/${roomId}/`, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": "{{ csrf_token }}",
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          document.getElementById("chat-messages").innerHTML = 
+            '<p class="text-center text-gray-500 mt-10">✅ All messages deleted successfully.</p>';
+        } else {
+          alert(data.message || "❌ Failed to delete messages");
+        }
+      })
+      .catch(err => console.error("Delete all error:", err));
+    }
+  }
+</script>
+
+{% endblock %}

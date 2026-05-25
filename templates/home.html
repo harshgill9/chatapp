@@ -1,81 +1,170 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="flex h-[78vh] border rounded-lg overflow-hidden shadow-sm">
-  <!-- Sidebar -->
-  <aside class="w-64 bg-white border-r overflow-y-auto">
-    <div class="p-2 border-b">
-      <h2 class="text-xl font-semibold text-indigo-600">👋 Welcome, {{ request.user.first_name }}</h2>
-      <div class="mt-4 text-sm text-gray-600">
-        <input
-          type="text"
-          id="search-input"
-          placeholder="Search users or enter room name..."
-          class="w-full px-3 py-2 border rounded focus:outline-indigo-500"
-        />
-        <div class="mt-2 flex gap-2">
-          <button id="search-user-btn" class="w-1/2 bg-green-600 text-white py-2 rounded hover:bg-green-700">
-            🔍 Search User
-          </button>
-          <button id="create-room-btn" class="w-1/2 bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700">
-            ➕ Create Room
-          </button>
-        </div>
-      </div>
+{% load humanize %}
+<div 
+   x-data="{
+    isChatActive: {{ chat_active|yesno:'true,false' }},
+    isOpen: false,
+    init() {
+      const isMobile = window.innerWidth < 768;
+      if (!isMobile) {
+        this.isOpen = true;
+        localStorage.removeItem('sidebarOpen');
+      } else {
+        if (this.isChatActive) {
+          this.isOpen = false;
+          localStorage.setItem('sidebarOpen', 'false');
+        } else {
+          const stored = localStorage.getItem('sidebarOpen');
+          if (stored === null) {
+            this.isOpen = true;
+            localStorage.setItem('sidebarOpen', 'true');
+          } else {
+            this.isOpen = stored === 'true';
+          }
+        }
+      }
+    },
+    toggleSidebar() {
+      this.isOpen = !this.isOpen;
+      if (window.innerWidth < 768) {
+        localStorage.setItem('sidebarOpen', this.isOpen ? 'true' : 'false');
+      }
+    }
+  }"
+  x-init="init()" 
+  class="flex w-full flex-grow h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)] border dark:border-gray-700 overflow-hidden"
+>
+  <aside 
+    id="chat-sidebar"
+    x-data="{
+      isChatActive: {{ selected_room|default:private_room|default:selected_user|yesno:'true,false' }},
+      isOpen: false,
+      init() {
+        const isMobile = window.innerWidth < 768;
+        if (!isMobile) {
+          this.isOpen = true;
+          localStorage.removeItem('sidebarOpen');
+        } else {
+          if (this.isChatActive) {
+            this.isOpen = false;
+            localStorage.setItem('sidebarOpen', 'false');
+          } else {
+            const stored = localStorage.getItem('sidebarOpen');
+            if (stored === null) {
+              this.isOpen = true;
+              localStorage.setItem('sidebarOpen', 'true');
+            } else {
+              this.isOpen = stored === 'true';
+            }
+          }
+        }
+      },
+      toggleSidebar() {
+        this.isOpen = !this.isOpen;
+        if (window.innerWidth < 768) {
+          localStorage.setItem('sidebarOpen', this.isOpen ? 'true' : 'false');
+        }
+      }
+    }"
+    x-init="init()"
+    :class="{ 
+      'fixed inset-0 z-40 w-full transition-transform duration-300 bg-white dark:bg-gray-800': window.innerWidth < 768 && !isOpen,
+      'transform translate-x-0 fixed inset-0 z-40 w-full transition-transform duration-300 bg-white dark:bg-gray-800': window.innerWidth < 768 && isOpen,
+      'transform -translate-x-full fixed inset-0 z-40 w-full transition-transform duration-300 bg-white dark:bg-gray-800': window.innerWidth < 768 && !isOpen
+    }"
+    class="
+      w-40 md:w-64 bg-white dark:bg-gray-800 border-r dark:border-gray-700 
+      overflow-y-auto text-gray-800 dark:text-gray-100 
+      md:relative md:transform-none md:inset-auto 
+      transition-all duration-300 ease-in-out
+    "
+  >
+    <div class="p-2 border-b dark:border-gray-700 flex justify-between items-center">
+      <h2 class="text-xl font-semibold text-indigo-600 dark:text-indigo-300">👋 Welcome, {{ request.user.first_name }}</h2>
     </div>
 
-    <div class="p-4">
-      <h3 class="text-sm font-medium text-gray-500 mb-2">Available Users</h3>
-      <ul class="space-y-2">
-        {% for user in users %}
-        <a
-          href="/?chat={{ user.username }}"
-          class="block px-4 py-2 rounded text-gray-700 flex items-center justify-between group bg-indigo-50 hover:bg-indigo-200"
-        >
-          <span>{{ user.first_name|default:user.username }}</span>
-          {% if user.userprofile.is_online %}
-            <span class="text-green-500 text-sm">🟢</span>
-          {% else %}
-            <span class="text-gray-400 text-sm">⚪</span>
-          {% endif %}
-        </a>
-        {% empty %}
-        <li class="text-gray-400 text-sm">No users available</li>
-        {% endfor %}
+    <div class="mt-4 px-2 text-sm text-gray-600 dark:text-gray-300">
+      <input
+        type="text"
+        id="search-input"
+        placeholder="Search users or enter room name..."
+        class="w-full px-3 py-2 border dark:border-gray-600 rounded focus:outline-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+      />
+    </div>
+
+    <!-- <div id="search-results"></div> -->
+    <div id="original-users" class="px-4 mt-4">
+
+      <h3 class="text-sm font-medium text-gray-800 dark:text-gray-300 mb-2">
+        Available Users
+      </h3>
+    
+      <!-- ORIGINAL USERS -->
+      <ul class="space-y-2" id="users-list">
+        {% include "partials/sidebar_users.html" %}
       </ul>
+    
+      <!-- SEARCH RESULTS -->
+      <ul class="space-y-2 hidden" id="search-users-list"></ul>
     </div>
 
-    <div class="px-4">
-      <h3 class="text-sm font-medium text-gray-500 mb-2">Available Rooms</h3>
+    <div id="rooms-container" class="px-4 mt-6">
+      <h3 class="text-sm font-medium text-gray-500 dark:text-gray-300 mb-2">Available Rooms</h3>
       <ul class="space-y-2">
         {% for room in rooms %}
-        <a
-          href="/?room={{ room.slug }}"
-          class="block px-4 py-2 rounded text-gray-700 flex items-center justify-between group bg-indigo-50 hover:bg-indigo-200"
+        <a 
+          href="/?room={{ room.slug }}" 
+          class="block px-4 py-2 rounded text-gray-700 dark:text-gray-200 flex items-center gap-3 group bg-indigo-50 dark:bg-gray-700 hover:bg-indigo-200 dark:hover:bg-gray-600"
         >
-          {{ room.name }}
-          {% if room.created_by == request.user %}
-          <form
-            action="{% url 'delete_room' room.id %}?next=home"
-            method="post"
-            onsubmit="return confirm('Are you sure you want to delete this room?');"
-            class="inline mt-1"
-          >
-            {% csrf_token %}
-            <button
-              type="submit"
-              title="Delete room"
-              class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+          {% if room.image %}
+            <img src="{{ room.image.url }}" alt="Room DP" class="w-8 h-8 rounded-full object-cover">
+          {% else %}
+            <div class="w-8 h-8 bg-indigo-500 text-white rounded-full flex items-center justify-center font-semibold uppercase">
+              {{ room.name|slice:":2" }}
+            </div>
+          {% endif %}
+          
+          <span class="flex-1 truncate">{{ room.name }}</span>
+
+          {% if room.unread_count > 0 %}
+              <span class="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                  {{ room.unread_count }}
+              </span>
+          {% endif %}
+
+          <!-- GROUP JOIN REQUEST BADGE -->
+          {% if room.created_by == request.user and room.pending_requests_count > 0 %}
+            <span
+              class="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                />
-              </svg>
-            </button>
-          </form>
+              {{ room.pending_requests_count }}
+            </span>
+          {% endif %}
+        
+          {% if room.created_by == request.user %}
+            <form
+              action="{% url 'delete_room' room.id %}?next=home"
+              method="post"
+              onsubmit="return confirm('Are you sure you want to delete this room?');"
+              class="inline mt-1"
+            >
+              {% csrf_token %}
+              <button
+                type="submit"
+                title="Delete room"
+                class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              </button>
+            </form>
           {% endif %}
         </a>
         {% empty %}
@@ -85,102 +174,1731 @@
     </div>
   </aside>
 
-  <!-- Main Chat Display -->
-  <main class="flex-1 px-4 bg-gray-50 flex flex-col">
-    {% if selected_room or private_room %}
-      {% if selected_room %}
-        <h2 class="text-xl font-bold my-2">Room: {{ selected_room.name }}</h2>
-      {% elif selected_user %}
-        <h2 class="text-xl font-bold my-2 flex items-center gap-2">
-          Chat with: {{ selected_user.first_name }}
-          {% if selected_user_status %}
-            <span class="text-green-500 text-sm">🟢 Online</span>
-          {% else %}
-            <span class="text-gray-400 text-sm">⚪ Offline</span>
-          {% endif %}
-        </h2>
-      {% endif %}
+<main 
+    class="flex-1 overflow-y-auto px-4 md:px-6 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col"
+>
+    {% if request.user.is_anonymous %}
+        <div class="flex flex-col justify-center items-center h-full text-center">
+            <h2 class="text-2xl font-semibold mb-4">Please log in to start chatting</h2>
+            <a href="{% url 'login' %}" class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700">
+                Go to Login
+            </a>
+        </div>
 
-      <div class="flex flex-col justify-between overflow-y-auto h-full mb-4">
+    {% elif selected_room or private_room or selected_user %}
         
-        <div id="chat-box" class="border p-4 flex-1 overflow-y-scroll bg-white rounded mb-2 space-y-2"></div>
-        <p id="typing-status" class="text-sm text-blue-500 italic text-left px-2 pb-1"></p>
+        <div 
+            x-data="{ 
+                forwardMode: false, 
+                selectedMessages: [], 
+                forwardSelectedMessages() {
+                    console.log('🧩 Selected Messages:', this.selectedMessages);
+                    if (this.selectedMessages.length === 0) {
+                        alert('Select at least one message to forward.');
+                        return;
+                    }
+                    openForwardModal(this.selectedMessages, '{{ request.user.username }}', ''); 
+                    this.forwardMode = false;
+                    this.selectedMessages = [];
+                }
+            }"
+            class="flex flex-col h-full"
+        >
 
-        <form id="chat-form" class="flex gap-2">
-          <input
-            type="text"
-            id="message-input"
-            class="flex-1 border px-4 py-2 rounded"
-            placeholder="Type a message..."
-            autocomplete="off"
-            required
-          />
-          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Send</button>
-        </form>
-      </div>
+            <div class="flex items-center gap-3 my-4">
+                {% if selected_user %}
+                    {% if selected_user.profile.profile_pic %}
+                        <img src="{{ selected_user.profile.profile_pic.url }}" alt="DP"
+                             class="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-indigo-400 transition"
+                             onclick="openModal(this.src)">
+                    {% else %}
+                        <div class="w-10 h-10 bg-indigo-500 text-white rounded-full flex items-center justify-center font-bold uppercase">
+                            {{ selected_user.username|first }}
+                        </div>
+                    {% endif %}
+                    <div id="user-{{ selected_user.username }}" class="flex-grow">
+                        <h2 class="text-xl font-bold cursor-pointer" onclick="openUserProfileModal()">
+                            {{ selected_user.first_name|default:selected_user.username }}
+                        </h2>
+                        {% if selected_user.profile.is_online %}
+                            <span class="text-green-500 text-sm">🟢 Online</span>
+                        {% else %}
+                            <span class="text-gray-400 text-sm">⚪ Offline</span>
+                            <span class="text-gray-400 text-sm">Last seen: {{ selected_user.profile.last_seen|naturaltime }}</span>
+                        {% endif %}
+                        <span id="typing-status" class="text-sm text-blue-500 italic ml-2"></span>
+                    </div>
+
+                {% elif selected_room %}
+                    {% if selected_room.image %}
+                        <img src="{{ selected_room.image.url }}" alt="Room"
+                             class="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-indigo-400 transition"
+                             onclick="openModal(this.src)">
+                    {% else %}
+                        <div class="w-10 h-10 bg-indigo-500 text-white rounded-full flex items-center justify-center font-bold uppercase cursor-pointer">
+                            {{ selected_room.name|slice:":2" }}
+                        </div>
+                    {% endif %}
+                    <div class="flex flex-col flex-grow">
+                      <a href="{% url 'group_info' selected_room.slug %}" class="text-xl font-bold text-green-600 hover:underline flex-grow">
+                          {{ selected_room.name }}
+                      </a>
+                      <span id="typing-status" class="text-sm text-blue-500 italic opacity-80 mt-1"></span>
+                    </div>
+                {% elif private_room %}
+                    <h2 class="text-xl font-bold flex-grow">Chatting in Private Room</h2>
+                {% endif %}
+            </div>
+
+            <div class="flex flex-col justify-between flex-1 overflow-hidden min-h-0">
+                
+                {% if selected_room %}
+                    {% if request.user == selected_room.created_by or request.user in selected_room.members.all %}
+                        <div id="chat-box"
+                             class="flex-1 overflow-y-auto border dark:border-gray-700 p-4 bg-white dark:bg-gray-800 rounded mb-2 space-y-2">
+                            {% for msg in messages %}
+                                <div class="flex items-start gap-2 {% if msg.sender == request.user %}justify-end{% endif %}">
+                                    <input 
+                                        type="checkbox"
+                                        x-show="forwardMode"
+                                        x-model="selectedMessages"
+                                        value="{{ msg.id }}"
+                                        class="w-4 h-4 mt-2 accent-blue-600 cursor-pointer transition"
+                                    />
+
+                                    <div class="relative group bg-gray-100 dark:bg-gray-700 p-3 rounded-lg max-w-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+
+                                        {% if msg.is_forwarded %}
+                                            <p class="text-xs text-gray-400 italic mb-1">
+                                                Forwarded from {{ msg.original_sender }}
+                                            </p>
+                                        {% endif %}
+
+                                        <p class="text-sm">
+                                            <strong>{{ msg.sender.username }}</strong>: {{ msg.content }}
+                                        </p>
+
+                                        <div class="flex gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                            <button class="hover:text-blue-500">💬 Reply</button>
+                                            <button @click="forwardMode = true; selectedMessages.push('{{ msg.id }}')" class="hover:text-blue-500">📤 Forward</button>
+                                            <button class="hover:text-red-500">🗑️ Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <p class="text-center text-gray-400">No messages yet.</p>
+                            {% endfor %}
+                        </div>
+
+                        <!-- <div 
+                            x-show="forwardMode" 
+                            x-transition
+                            class="flex items-center justify-between bg-blue-100 dark:bg-gray-700 p-2 rounded-md mb-2 shadow"
+                        >
+                            <div class="flex items-center gap-3">
+                                <button 
+                                    @click="forwardMode = false; selectedMessages = []" 
+                                    class="text-red-500 font-semibold hover:text-red-600"
+                                >
+                                    ✖ Close
+                                </button>
+                                <span class="text-gray-800 dark:text-gray-200">
+                                    <span x-text="selectedMessages.length"></span> selected
+                                </span>
+                            </div>
+                            <button 
+                                @click="forwardSelectedMessages()" 
+                                class="text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1"
+                            >
+                                <span>Forward</span> 📤
+                            </button>
+                        </div> -->
+
+                        <div class="w-full mt-2">
+                            <form id="chat-form" class="relative w-full">
+                                <input
+                                    type="text"
+                                    id="message-input"
+                                    class="w-full px-4 py-2 rounded-full border border-gray-300 bg-white text-gray-900 focus:outline-none dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                                    placeholder="Type a message..."
+                                    autocomplete="off"
+                                    required
+                                />
+                                <button type="submit"
+                                        class="absolute top-1/2 right-1 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white w-9 h-9 flex items-center justify-center rounded-full">
+                                    <i class="fas fa-paper-plane text-sm"></i>
+                                </button>
+                            </form>
+                        </div>
+
+                    {% else %}
+                        <div class="flex flex-col justify-center items-center h-full text-center">
+                        
+                            {% if join_request and join_request.status == 'pending' %}
+                        
+                                <p class="text-yellow-500 font-medium mb-3">
+                                    Join request sent. Waiting for admin approval.
+                                </p>
+                              
+                                <button
+                                    disabled
+                                    class="bg-yellow-500 text-white px-4 py-2 rounded-full cursor-not-allowed"
+                                >
+                                    Pending
+                                </button>
+                              
+                            {% else %}
+                              
+                                <p class="text-gray-500 mb-3">
+                                    You are not a member of this group.
+                                </p>
+                              
+                                <form
+                                    method="POST"
+                                    action="{% url 'send_join_request' selected_room.slug %}"
+                                >
+                                    {% csrf_token %}
+                              
+                                    <button
+                                        type="submit"
+                                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full transition"
+                                    >
+                                        Send Join Request
+                                    </button>
+                                  
+                                </form>
+                              
+                            {% endif %}
+                              
+                        </div>
+                    {% endif %}
+                
+                {% elif selected_user or private_room %}
+                    <div id="chat-box"
+                         class="flex-1 overflow-y-auto border dark:border-gray-700 p-4 bg-white dark:bg-gray-800 rounded mb-2 space-y-2">
+                        {% for msg in messages %}
+                            <div class="flex items-start gap-2 {% if msg.sender == request.user %}justify-end{% endif %}">
+                                <input 
+                                    type="checkbox"
+                                    x-show="forwardMode"
+                                    x-model="selectedMessages"
+                                    value="{{ msg.id }}"
+                                    class="w-4 h-4 mt-2 accent-blue-600 cursor-pointer transition"
+                                />
+                                
+                                <div class="relative group bg-gray-100 dark:bg-gray-700 p-3 rounded-lg max-w-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+
+                                    {% if msg.is_forwarded %}
+                                        <p class="text-xs text-gray-400 italic mb-1">
+                                            Forwarded from {{ msg.original_sender }}
+                                        </p>
+                                    {% endif %}
+
+                                    <p class="text-sm"><strong>{{ msg.sender.username }}</strong>: {{ msg.content }}</p>
+
+                                    <div class="flex gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                        <button class="hover:text-blue-500">💬 Reply</button>
+                                        <button @click="forwardMode = true; selectedMessages.push('{{ msg.id }}')" class="hover:text-blue-500">📤 Forward</button>
+                                        <button class="hover:text-red-500">🗑️ Delete</button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <p class="text-center text-gray-400">No messages yet.</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="w-full mt-2">
+                        <form id="chat-form" class="relative w-full">
+                            <input
+                                type="text"
+                                id="message-input"
+                                class="w-full px-4 py-2 rounded-full border border-gray-300 bg-white text-gray-900 focus:outline-none dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
+                                placeholder="Type a message..."
+                                autocomplete="off"
+                                required
+                            />
+                            <button type="submit"
+                                    class="absolute top-1/2 right-1 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white w-9 h-9 flex items-center justify-center rounded-full">
+                                <i class="fas fa-paper-plane text-sm"></i>
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+
+        </div> 
+    
     {% elif error_message %}
-      {% for err in error_message %}
-      <p class="text-red-500 text-center my-6">{{ err }}</p>
-      <a href="." class="block text-center text-indigo-500 hover:underline">Go to Home</a>
-      {% endfor %}
+        <div class="text-center my-6">
+            {% for err in error_message %}
+                <p class="text-red-500 mb-2">{{ err }}</p>
+            {% endfor %}
+            <a href="." class="text-indigo-500 hover:underline">Go to Home</a>
+        </div>
+
     {% else %}
-    <div>
-      <h2 class="text-2xl font-semibold text-gray-700 my-2">Select a Room</h2>
-      <p class="text-gray-500">Click on a chat room from the left sidebar to start messaging.</p>
-    </div>
+        <div class="flex flex-col justify-center items-center h-full text-center">
+            <h2 class="text-2xl font-semibold mb-2">Select a Room</h2>
+            <p class="text-gray-500">Click on a user or chat room in the sidebar to start chatting.</p>
+        </div>
     {% endif %}
-  </main>
+</main>
+
+  <div 
+    id="imageModal" 
+    class="fixed inset-0 bg-black bg-opacity-80 hidden z-50 flex items-center justify-center">
+  </div>
+
+  <!-- Contact Info Modal -->
+  <div id="userProfileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md">
+
+      <div class="flex justify-end ">
+        <button id="closeUserProfileBtn"
+          class="text-gray-400 hover:text-red-600 text-4xl font-bold leading-none focus:outline-none">
+          &times;
+        </button>
+      </div>
+
+      <!-- Header with Title  -->
+      <div class="flex justify-center items-center border-b pb-2 mb-4">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Contact Info</h2>
+      </div>
+
+      <!-- Mute toggle -->
+      <div class="mb-4 border-b pb-4 flex items-center justify-between">
+        <span class="font-medium">Mute notifications</span>
+        <label class="inline-flex relative items-center cursor-pointer">
+          <input type="checkbox" id="muteToggle" class="sr-only peer" onchange="saveMuteSetting()" />
+          <div class="w-9 h-5 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer dark:bg-gray-600 peer-checked:bg-blue-600 relative transition"></div>
+          <span class="absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition peer-checked:translate-x-4"></span>
+        </label>
+      </div>
+
+      <!-- Advanced chat privacy -->
+      <div class="mb-4 border-b pb-4">
+        <p class="font-medium">Advanced chat privacy</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Off</p>
+      </div>
+
+      <!-- Encryption -->
+      <div class="mb-4 border-b pb-4">
+        <p class="font-medium">Encryption</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Off</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Messages are end-to-end encrypted.</p>
+      </div>
+
+      {% if selected_user %}
+      <div class="mb-4 border-b pb-4">
+        <p class="font-medium">Phone</p>
+
+        <!-- <p>{{ selected_user.username }}</p> -->
+        <p>
+            {% if selected_user.profile.phone_number %}
+                {{ selected_user.profile.phone_number }}
+            {% else %}
+                Not provided
+            {% endif %}
+        </p>
+      </div>
+    
+      <div class="mb-4 border-b pb-4">
+        <p class="font-medium">About</p>
+        <p class="text-sm text-gray-700 dark:text-gray-300">
+          {{ selected_user.profile.about|default:"No bio available" }}
+        </p>
+      </div>
+    {% endif %}
+    
+
+    {% if selected_user %}
+      <!-- Action Buttons -->
+      <div class="space-y-2">
+        <div id="block-toggle-container">
+          {% if is_blocked %}
+            <button id="blockUserBtn" onclick="toggleBlock('{{ selected_user.username }}', 'unblock')" class="w-full text-left text-green-500 hover:text-green-700">
+              ✅ Unblock {{ selected_user.username }}
+            </button>
+          {% else %}
+            <button onclick="toggleBlock('{{ selected_user.username }}', 'block')" class="w-full text-left text-red-500 hover:text-red-700">
+              🚫 Block {{ selected_user.username }}
+            </button>
+          {% endif %}
+        </div>
+      
+        <button onclick="deleteChatFromProfile('{{ selected_user.username }}')"
+          class="w-full text-left text-red-500 hover:text-red-700">
+          🗑️ Delete All Chat
+        </button>
+
+      </div>
+    {% endif %}
+
 </div>
 
+<style>
+.chat-message {
+  position: relative; 
+}
+
+.arrow-icon {
+  display: inline-block;
+  cursor: pointer;
+  font-size: 14px;
+  margin-left: 6px;
+  margin-top: 5px;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform: translateY(0);
+}
+
+.chat-message:hover .arrow-icon {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+.chat-message .group:hover span {
+  transform: translateY(-1px);
+  transition: transform 0.2s ease;
+}
+
+</style>
+
 <script>
-  const searchInput = document.getElementById("search-input");
-  const searchUserBtn = document.getElementById("search-user-btn");
-  const createRoomBtn = document.getElementById("create-room-btn");
+  document.addEventListener('DOMContentLoaded', function () {
+    
+  // -------------------- LIVE USER SEARCH --------------------
 
-  const users = [...document.querySelectorAll("ul.space-y-2:first-of-type a span:first-child")].map(el => el.textContent.trim().toLowerCase());
-  const rooms = [...document.querySelectorAll("ul.space-y-2:last-of-type a")].map(el => el.textContent.trim().toLowerCase());
+  const searchInput =
+      document.getElementById("search-input");
 
-  searchUserBtn.addEventListener("click", () => {
-    const inputVal = searchInput.value.trim().toLowerCase();
-    if (!inputVal) return alert("Please enter a user name");
+  const usersList =
+      document.getElementById("users-list");
 
-    const matchedUser = users.find(user => user.includes(inputVal));
-    if (matchedUser) {
-      const userLink = [...document.querySelectorAll("ul.space-y-2:first-of-type a")].find(link =>
-        link.textContent.trim().toLowerCase().includes(inputVal)
-      );
-      if (userLink) {
-        userLink.click();
+  const searchUsersList =
+      document.getElementById("search-users-list");
+
+  const roomsContainer =
+      document.getElementById("rooms-container");
+
+  searchInput?.addEventListener("input", async () => {
+
+      const query =
+          searchInput.value.trim();
+
+      // ✅ EMPTY SEARCH
+      if (!query) {
+
+          // show original users
+          usersList.classList.remove("hidden");
+
+          // hide search results
+          searchUsersList.classList.add("hidden");
+
+          // clear results
+          searchUsersList.innerHTML = "";
+
+          // show groups again
+          if (roomsContainer) {
+              roomsContainer.style.display = "block";
+          }
+
+          return;
       }
-    } else {
-      alert("User not found");
-    }
+
+      try {
+
+          const response = await fetch(
+              `/search-users/?q=${query}`
+          );
+
+          const data =
+              await response.json();
+
+          // hide groups while searching
+          if (roomsContainer) {
+              roomsContainer.style.display = "none";
+          }
+
+          // hide original users
+          usersList.classList.add("hidden");
+
+          // show search result box
+          searchUsersList.classList.remove("hidden");
+
+          // clear old results
+          searchUsersList.innerHTML = "";
+
+          // ================= USERS =================
+
+          if (data.users && data.users.length > 0) {
+
+              searchUsersList.innerHTML += `
+                  <div class="text-sm font-bold text-gray-500 px-4 mb-2">
+                      Available Users
+                  </div>
+              `;
+
+              data.users.forEach(user => {
+
+                  searchUsersList.innerHTML += `
+                  <a
+                      href="/?chat=${user.username}"
+                      class="block px-4 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                      <div class="flex items-center gap-3">
+
+                          ${
+                              user.profile_pic
+                              ? `
+                              <img
+                                  src="${user.profile_pic}"
+                                  class="w-8 h-8 rounded-full object-cover"
+                              >
+                              `
+                              : `
+                              <div class="w-8 h-8 rounded-full bg-gray-400"></div>
+                              `
+                          }
+
+                          <div>
+                              <p class="font-semibold text-gray-800 dark:text-white">
+                                  ${user.name}
+                              </p>
+
+                              <p class="text-sm text-gray-500">
+                                  @${user.username}
+                              </p>
+                          </div>
+
+                      </div>
+                  </a>
+                  `;
+              });
+          }
+
+          // ================= GROUPS =================
+
+          if (data.groups && data.groups.length > 0) {
+
+              searchUsersList.innerHTML += `
+                  <div class="mt-4 pt-3 border-t border-gray-300 dark:border-gray-700">
+
+                      <div class="text-sm font-bold text-gray-500 px-4 mb-2">
+                          Groups
+                      </div>
+
+                  </div>
+              `;
+
+              data.groups.forEach(group => {
+
+                  searchUsersList.innerHTML += `
+                  <a
+                      href="/?room=${group.slug}"
+                      class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                      <div class="flex items-center gap-3">
+
+                          ${
+                              group.image
+                              ? `
+                              <img
+                                  src="${group.image}"
+                                  class="w-10 h-10 rounded-full object-cover"
+                              >
+                              `
+                              : `
+                              <div class="w-10 h-10 rounded-full bg-indigo-500 text-white flex items-center justify-center font-semibold">
+                                  ${group.name.slice(0,2).toUpperCase()}
+                              </div>
+                              `
+                          }
+
+                          <div>
+                              <p class="font-semibold text-gray-800 dark:text-white">
+                                  ${group.name}
+                              </p>
+                          </div>
+
+                      </div>
+                  </a>
+                  `;
+              });
+          }
+
+          // ================= NOTHING FOUND =================
+
+          if (
+              (!data.users || data.users.length === 0) &&
+              (!data.groups || data.groups.length === 0)
+          ) {
+
+              searchUsersList.innerHTML = `
+                  <p class="text-center text-gray-500 py-4">
+                      No users or groups found
+                  </p>
+              `;
+          }
+
+      } catch (err) {
+
+          console.log(
+              "Search Error:",
+              err
+          );
+      }
   });
 
-  createRoomBtn.addEventListener("click", () => {
-    const roomName = searchInput.value.trim();
-    if (!roomName) return alert("Please enter a room name");
+  // -------------------- Image Modal --------------------
+  const imageModal = document.getElementById('imageModal');
+  window.openModal = src => {
+    imageModal.innerHTML = `
+      <span class="absolute top-5 right-5 text-white text-3xl cursor-pointer" onclick="closeModal()">×</span>
+      <img src="${src}" class="w-96 h-96 object-cover rounded-full shadow-lg border-4 border-white"/>
+    `;
+    imageModal.classList.remove('hidden');
+  };
+  window.closeModal = () => imageModal.classList.add('hidden');
+  imageModal.addEventListener('click', e => e.target === imageModal && window.closeModal());
 
-    if (rooms.includes(roomName.toLowerCase())) {
-      return alert("Room already exists!");
-    }
+  // -------------------- User Profile Modal --------------------
+  const userProfileModal = document.getElementById("userProfileModal");
+  window.openUserProfileModal = () => userProfileModal?.classList.remove("hidden");
+  window.closeUserProfileModal = () => userProfileModal?.classList.add("hidden");
+  document.getElementById('closeUserProfileBtn')?.addEventListener('click', window.closeUserProfileModal);
 
-    fetch("/create_room_ajax/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": "{{ csrf_token }}"
-      },
-      body: JSON.stringify({ name: roomName })
-    })
+  // -------------------- Mute Notification --------------------
+  const muteToggle = document.getElementById("muteToggle");
+  let muteSetting = localStorage.getItem("muteNotifications") === "true";
+  if (muteToggle) {
+    muteToggle.checked = muteSetting;
+    muteToggle.addEventListener('change', () => {
+      muteSetting = muteToggle.checked;
+      localStorage.setItem("muteNotifications", muteSetting);
+    });
+  }
+  function playNotificationSound() {
+    if (!muteSetting) new Audio("/static/sounds/notification.mp3").play().catch(()=>{});
+  }
+
+  // -------------------- WebSocket Chat --------------------
+
+  const currentUsername =
+      "{{ request.user.username }}";
+
+  const currentName =
+      "{{ request.user.first_name|default:request.user.username }}";
+
+  const isPrivate =
+      {{ selected_user|yesno:"true,false" }} ||
+      {{ private_room|yesno:"true,false" }};
+
+  const otherUsername =
+      "{{ selected_user.username|default_if_none:'' }}";
+
+  // ✅ room name dynamic
+  let roomName = "";
+
+  // ================= PRIVATE CHAT =================
+
+  if (isPrivate && otherUsername) {
+
+      roomName = [
+          currentUsername,
+          otherUsername
+      ]
+      .sort()
+      .join("__");
+  }
+
+  // ================= GROUP CHAT =================
+
+  else if ("{{ selected_room.slug|default:'' }}") {
+
+      roomName =
+          "{{ selected_room.slug }}";
+  }
+
+  // ================= DEFAULT =================
+
+  else {
+
+      roomName = "general";
+  }
+
+  console.log("ROOM NAME:", roomName);
+
+  // ================= SOCKET =================
+
+  const wsScheme =
+      window.location.protocol === "https:"
+          ? "wss"
+          : "ws";
+
+  const socketUrl = isPrivate
+      ? `${wsScheme}://${window.location.host}/ws/private/${roomName}/`
+      : `${wsScheme}://${window.location.host}/ws/chat/${roomName}/`;
+
+  console.log("SOCKET URL:", socketUrl);
+
+  const socket =
+      new WebSocket(socketUrl);
+
+  // ================= CHAT BOX =================
+
+  const chatBox =
+      document.getElementById("chat-box");
+
+  if (!chatBox) {
+
+      console.warn("⚠️ chat-box not found");
+
+  } else {
+
+      console.log("✅ chat-box found:", chatBox);
+  }
+
+  // -------------------- Load Messages --------------------
+  const endpoint = isPrivate 
+    ? `/load_private_messages/${roomName}/` 
+    : `/load_room_messages/${roomName}/`;
+    console.log("LOAD ENDPOINT:", endpoint);
+
+  fetch(endpoint)
     .then(res => res.json())
     .then(data => {
-      if (data.success) {
-        window.location.href = `/?room=${data.slug}`;
+    
+      // ✅ Safety check
+      if (!chatBox) {
+        console.warn("⚠️ chat-box not found");
+        return;
+      }
+    
+      chatBox.innerHTML = "";
+    
+      if (!data.messages.length) {
+      
+        chatBox.innerHTML = `
+          <p class="text-center text-gray-400">
+            No messages yet.
+          </p>
+        `;
+        
+        return;
+      }
+    
+      data.messages.forEach(msg => {
+      
+        addMessage(
+          msg.username,
+          {
+            id: msg.id,
+            message: msg.content,
+            reply_to: msg.reply_to,
+            reply_name: msg.reply_name,
+            reply_to_id: msg.reply_to_id,
+            reply_message: msg.reply_message
+          },
+          msg.username === currentUsername
+        );
+        
+      });
+    
+      setTimeout(() => {
+      
+        chatBox.scrollTop =
+          chatBox.scrollHeight;
+      
+      }, 50);
+    
+    })
+    .catch(err =>
+      console.error(
+        "Error loading messages:",
+        err
+      )
+    );
+
+  function getActiveChat() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("chat");
+  }
+
+  function getActiveRoom() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("room");
+  }
+
+
+  // // -------------------- Check Room Access for Pending Requests --------------------
+  // sessionStorage.removeItem("already_reloaded");
+
+  // {% if user_request and user_request.status == 'pending' %}
+
+  // const checkAccessInterval = setInterval(async () => {
+
+  //     const roomSlug =
+  //         new URLSearchParams(window.location.search).get("room");
+
+  //     if (!roomSlug) return;
+
+  //     try {
+
+  //         const response = await fetch(
+  //             `/check-room-access/${roomSlug}/`
+  //         );
+
+  //         const data = await response.json();
+
+  //         // ✅ Admin accepted request
+  //         if (data.is_member) {
+
+  //             clearInterval(checkAccessInterval);
+
+  //             window.location.reload();
+  //         }
+
+  //     } catch (err) {
+
+  //         console.log(err);
+
+  //     }
+
+  // }, 3000);
+
+  // {% endif %}
+
+
+
+  // -------------------- WebSocket Incoming --------------------
+  socket.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    console.log("📩 Incoming:", data);
+
+    // 🟡 Typing Status
+    if (
+      data.type === "typing_status" &&
+      data.username !== currentUsername
+    ) {
+
+      const typingStatus =
+        document.getElementById("typing-status");
+
+      if (typingStatus) {
+
+        if (data.is_typing) {
+
+          typingStatus.textContent =
+            `${data.name || data.username} is typing...`;
+
+          typingStatus.style.display = "inline";
+
+        } else {
+
+          typingStatus.textContent = "";
+          typingStatus.style.display = "none";
+        }
+      }
+
+      return;
+    }
+
+    // 🟢 User Online/Offline
+    if (data.type === "user_status") {
+
+      updateUserStatus(
+        data.username,
+        data.is_online
+      );
+
+      return;
+    }
+
+    // 🗑️ Delete Chat
+    if (data.type === "delete_chat") {
+
+      document
+        .querySelectorAll(".message")
+        .forEach(msg => msg.remove());
+
+      if (chatBox) {
+        chatBox.innerHTML = "";
+      }
+
+      return;
+    }
+
+    if (data.type === "sidebar_update") {
+
+      const sidebarUser =
+        data.username === currentUsername
+          ? data.receiver
+          : data.username;
+
+      const userItem = document.querySelector(
+        `#sidebar-user-${sidebarUser}`
+      );
+
+      if (!userItem) return;
+
+      // ✅ move top
+      const usersList =
+        document.getElementById("search-results");
+
+      if (usersList && userItem) {
+        usersList.prepend(userItem);
+      }
+
+      // ✅ update last msg
+      const lastMsg =
+        userItem.querySelector(".last-message");
+
+      if (lastMsg) {
+
+          if (data.username === currentUsername) {
+
+              lastMsg.innerHTML =
+                `<span class="text-blue-500 font-semibold">You:</span> ${data.message}`;
+
+          } else {
+
+              lastMsg.innerHTML =
+                `<span class="font-semibold">${data.username}:</span> ${data.message}`;
+          }
+      }
+
+      // ✅ active chat open
+      if (getActiveChat() === sidebarUser) {
+
+          const badge =
+            userItem.querySelector(".unread-badge");
+
+          if (badge) {
+              badge.remove();
+          }
+
+          return;
+      }
+
+      // ✅ unread badge
+      if (data.username !== currentUsername) {
+
+          let badge =
+            userItem.querySelector(".unread-badge");
+
+          if (badge) {
+
+              let count =
+                parseInt(badge.innerText) || 0;
+
+              badge.innerText = count + 1;
+
+          } else {
+
+              badge = document.createElement("span");
+
+              badge.className =
+                "unread-badge px-2 py-1 text-xs font-semibold bg-blue-500 text-white rounded-full";
+
+              badge.innerText = 1;
+
+              const rightSection =
+                userItem.querySelector(".right-section");
+
+              if (rightSection) {
+                  rightSection.prepend(badge);
+              }
+          }
+      }
+
+      return;
+  }
+
+    // 💬 New Chat Message
+    if (
+      data.type === "chat_message" ||
+      data.type === "chat" 
+      // data.type === "sidebar_update"
+    ) {
+
+      console.log("🔥 CHAT MESSAGE EVENT RUNNING");
+      console.log(data);
+
+      const text = data.message?.trim?.();
+
+      if (!text) return;
+
+      // ✅ Add message to chat box
+      addMessage(
+        data.username,
+        data,
+        data.username === currentUsername
+      );
+
+      if (chatBox) {
+          chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      // ✅ GROUP MESSAGE → sidebar unread skip
+      const isGroupMessage = !data.receiver;
+
+      if (isGroupMessage) {
+        return;
+      }
+
+      // 👤 Active chat username
+      const activeChatUsername = getActiveChat();
+
+      // 👤 Sidebar user
+      const sidebarUser =
+        data.username === currentUsername
+          ? data.receiver
+          : data.username;
+
+      console.log("ACTIVE CHAT:", activeChatUsername);
+      console.log("SIDEBAR USER:", sidebarUser);
+
+      // ✅ Find sidebar item
+      const userItem = document.querySelector(
+        `#sidebar-user-${sidebarUser}`
+      );
+
+      if (!userItem) {
+        console.log("❌ Sidebar user not found");
+        return;
+      }
+
+      // ✅ SAME CHAT OPEN → remove unread
+      if (
+          activeChatUsername &&
+          sidebarUser === activeChatUsername
+      ) {
+      
+          // ✅ backend already read mark kar chuka
+          // to unread badge hata do
+      
+          const badge =
+            userItem.querySelector(".unread-badge");
+      
+          if (badge) {
+              badge.remove();
+          }
+        
+          // ✅ also reset sidebar text
+          const lastMsg =
+            userItem.querySelector(".new-message-text");
+        
+          if (lastMsg) {
+              lastMsg.innerHTML = "";
+          }
+        
+          return;
+      }
+
+      // ✅ DIFFERENT CHAT → show unread
+      if (data.username !== currentUsername) {
+
+        let badge =
+          userItem.querySelector(".unread-badge");
+
+        if (badge) {
+
+          let currentCount =
+            parseInt(badge.innerText) || 0;
+
+          badge.innerText = currentCount + 1;
+
+        } else {
+
+          badge = document.createElement("span");
+
+          badge.className =
+            "unread-badge px-2 py-1 text-xs font-semibold bg-green-500 text-white rounded-full";
+
+          badge.innerText = 1;
+
+          const rightSection =
+            userItem.querySelector(".right-section");
+
+          if (rightSection) {
+            rightSection.prepend(badge);
+          }
+        }
+
+        playNotificationSound();
+      }
+
+      return;
+    }
+  };
+
+  // ---------- sidebar user click → remove badge ----------
+  document.querySelectorAll("[id^='sidebar-user-']").forEach(userItem => {
+
+      userItem.addEventListener("click", function () {
+
+          // unread badge find karo
+          const badge = this.querySelector(".unread-badge");
+
+          // agar badge h to remove kar do
+          if (badge) {
+              badge.remove();
+          }
+
+      });
+
+  });
+
+  // ✅ FORM ELEMENTS
+  const chatForm = document.getElementById("chat-form");
+  const messageInput = document.getElementById("message-input");
+  const typingStatus = document.getElementById("typing-status");
+
+  console.log("chatForm:", chatForm);
+  console.log("messageInput:", messageInput);
+
+  // -------------------- Send Message --------------------
+  chatForm?.addEventListener("submit", e => {
+    e.preventDefault();
+
+    const msg = messageInput.value.trim();
+    if (!msg || socket.readyState !== WebSocket.OPEN) return;
+
+    // 🟩 Get reply info (if exists)
+    const replyBox = document.querySelector("#reply-preview");
+    const replyTo = replyBox ? parseInt(replyBox.getAttribute("data-reply-id")) : null;
+    const replyName = replyBox ? replyBox.getAttribute("data-reply-name") : null; // username or name
+
+    // 🧠 Debug log
+    console.log("📤 Sending:", {
+      type: "chat",
+      message: msg,
+      username: currentUsername,
+      name: currentName,
+      reply_to: replyTo && !isNaN(replyTo) ? replyTo : null,
+      reply_name: replyName || null
+    });
+
+    // 🔹 Send message (with optional reply)
+    socket.send(JSON.stringify({
+      type: "chat",
+      message: msg,
+      username: currentUsername,
+      name: currentName,
+      reply_to: replyTo || null,
+      reply_name: replyName || null
+    }));
+
+    // 🔹 Reset input + reply box
+    messageInput.value = "";
+    if (replyBox) replyBox.remove();
+    sendStopTyping();
+  });
+
+  // -------------------- Typing Indicator --------------------
+  function sendStopTyping() {
+    if (isTyping) {
+      socket.send(JSON.stringify({
+        type: 'stop_typing',
+        username: currentUsername
+      }));
+      isTyping = false;
+    }
+  }
+
+  messageInput?.addEventListener('keydown', () => {
+    clearTimeout(typingTimer);
+    if (!isTyping) {
+      isTyping = true;
+      socket.send(JSON.stringify({
+        type: 'typing',
+        username: currentUsername,
+        name: currentName,
+      }));
+    }
+    typingTimer = setTimeout(() => {
+      socket.send(JSON.stringify({
+        type: "stop_typing",
+        username: currentUsername,
+        name: currentName, // 👈 important
+      }));
+      isTyping = false;
+    }, TYPING_TIMER_LENGTH);
+  });
+
+  // ✅ chat open hote hi unread read mark karo
+  window.addEventListener("load", () => {
+      console.log("🔥 PAGE LOADED ONLY ONCE");
+      const activeChat = getActiveChat();
+      const activeRoom = getActiveRoom();
+
+      if (
+          activeChat &&
+          socket &&
+          socket.readyState === WebSocket.OPEN
+      ) {
+
+          socket.send(JSON.stringify({
+              type: "opened_chat",
+              opened_chat_user: activeChat
+          }));
+
+          console.log("✅ opened_chat sent:", activeChat);
+      }
+
+      // ✅ GROUP OPEN → REMOVE BADGE
+      if (activeRoom) {
+      
+          const roomBadge = document.querySelector(
+              `a[href='/?room=${activeRoom}'] .bg-blue-500`
+          );
+      
+          if (roomBadge) {
+              roomBadge.remove();
+          }
+      }
+  });
+
+  // -------------------- Enter key to send message --------------------
+  messageInput?.addEventListener("keydown", (e) => {
+
+      if (e.key === "Enter" && !e.shiftKey) {
+
+          e.preventDefault();
+
+          // ✅ form exists check
+          if (chatForm) {
+
+              chatForm.dispatchEvent(
+                  new Event("submit")
+              );
+
+          } else {
+
+              console.warn("⚠️ chatForm not found");
+
+          }
+      }
+  });
+  
+  // -------------------- Helper: Add Message --------------------
+  function addMessage(username, content, isMe) {
+    const div = document.createElement("div");
+    div.className = `relative flex mb-2 ${isMe ? "justify-end" : "justify-start"} chat-message`;
+    div.id = `msg-${content.id || Date.now()}`;
+  
+    const bubbleWrapper = document.createElement("div");
+    bubbleWrapper.className = "relative inline-block group";
+  
+    const msgBubble = document.createElement("div");
+    msgBubble.className = `
+      relative px-3 py-2 rounded-2xl max-w-xs shadow-sm
+      ${isMe
+        ? "bg-indigo-500 text-white rounded-tr-none"
+        : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-tl-none"}
+    `;
+  
+    if (content.reply_to) {
+      console.log("🧠 Message Content:", content);
+      const replySection = document.createElement("div");
+      replySection.className = `
+        mb-1 px-2 py-1 rounded-lg border-l-4 border-blue-400 cursor-pointer hover:bg-blue-800 dark:hover:bg-blue-800
+        ${isMe
+          ? "bg-indigo-600 text-blue-100"
+          : "bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200"}
+      `;
+      const replyText =
+        content.reply_message && content.reply_message.length > 50
+          ? content.reply_message.slice(0, 50) + "..."
+          : content.reply_message || "Message";
+    
+      replySection.innerHTML = `
+        <div class="${isMe ? "text-blue-200 font-semibold" : "text-blue-700 font-semibold"} text-xs">
+          ${content.reply_name || "User"}
+        </div>
+        <div class="text-xs truncate italic opacity-80">${content.reply_message ? content.reply_message : "Reply to message"}</div>
+      `;
+      
+      replySection.addEventListener("click", () => {
+        const targetId = parseInt(content.reply_to_id || content.reply_to);
+        console.log("🧭 Trying to scroll to:", targetId);
+      
+        if (!targetId || targetId === "undefined" || targetId === "null") {
+          console.warn("⚠️ No valid reply target found:", targetId);
+          return;
+        }
+      
+        const target = document.querySelector(`#msg-${targetId}`);
+      
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+          target.classList.add(
+            "ring-2",
+            "ring-blue-400",
+            "bg-blue-50",
+            "dark:bg-gray-700",
+            "transition-all",
+            "duration-500",
+            "rounded-lg",
+            "shadow-md"
+          );
+
+          setTimeout(() => {
+            target.classList.remove(
+              "ring-2", 
+              "ring-blue-400", 
+              "bg-blue-50", 
+              "dark:bg-gray-700",
+              "shadow-md"
+            );
+          }, 2000);
+        } else {
+          console.warn("❌ Target message not found in DOM:", targetId);
+        }
+      });
+      msgBubble.appendChild(replySection);
+    }
+  
+    const msgText = document.createElement("div");
+    msgText.textContent = content.message || content;
+    msgText.className = "break-words text-sm";
+    msgBubble.appendChild(msgText);
+  
+    const arrow = document.createElement("span");
+    arrow.className = `
+      absolute top-0 right-0 text-gray-300 text-xs cursor-pointer select-none
+      opacity-0 group-hover:opacity-100 transition-opacity duration-200
+    `;
+    arrow.innerHTML = "⬇️";
+  
+    const dropdown = document.createElement("div");
+    dropdown.className = `
+      absolute hidden z-50 min-w-[120px] rounded shadow-lg
+      bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700
+    `;
+    dropdown.innerHTML = `
+      <div class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-black dark:text-white rounded">💬 Reply</div>
+      <div class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-black dark:text-white rounded">📤 Forward</div>
+      <div class="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-black dark:text-white rounded">🗑️ Delete</div>
+    `;
+  
+    dropdown.children[0].addEventListener("click", () => {
+      dropdown.classList.add("hidden");
+      document.querySelector("#reply-preview")?.remove();
+    
+      const replyBox = document.createElement("div");
+      replyBox.id = "reply-preview";
+      replyBox.className =
+        "flex items-center justify-between px-3 py-2 mb-2 bg-gray-100 dark:bg-gray-700 rounded border-l-4 border-blue-500";
+      replyBox.setAttribute("data-reply-id", content.id); // ✅ store message id
+      replyBox.setAttribute("data-reply-name", username);
+      replyBox.innerHTML = `
+        <span class="text-sm text-gray-700 dark:text-gray-200 truncate max-w-[80%]">
+          ${content.message || content}
+        </span>
+        <button id="cancel-reply" class="text-gray-500 hover:text-red-500 text-sm font-bold ml-2">✕</button>
+      `;
+      messageInput.parentNode.insertBefore(replyBox, messageInput);
+      document.querySelector("#cancel-reply").addEventListener("click", () => replyBox.remove());
+    });
+  
+    dropdown.children[1].addEventListener("click", () =>
+      openForwardModal([], username, content.message || content)
+    );
+
+    dropdown.children[2].addEventListener("click", () =>
+      handleDelete(div, username, content.id)
+    );
+  
+    arrow.addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.querySelectorAll(".chat-message .dropdown-open").forEach((d) => {
+        d.classList.add("hidden");
+        d.classList.remove("dropdown-open");
+      });
+      dropdown.classList.remove("hidden");
+      dropdown.classList.add("dropdown-open");
+    
+      const arrowRect = arrow.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - arrowRect.bottom;
+      const spaceAbove = arrowRect.top;
+      const openAbove = spaceBelow < 150 && spaceAbove > spaceBelow;
+    
+      if (isMe) {
+        dropdown.style.right = "25px";
+        dropdown.style[openAbove ? "bottom" : "top"] = "0";
       } else {
-        alert(data.error || "Room creation failed");
+        dropdown.style.left = "calc(100% + 6px)";
+        dropdown.style[openAbove ? "bottom" : "top"] = "0";
       }
     });
+  
+    document.addEventListener("click", (e) => {
+    
+        const openDropdown =
+            document.querySelector(".dropdown-open");
+    
+        if (
+            openDropdown &&
+            !openDropdown.contains(e.target)
+        ) {
+        
+            openDropdown.classList.add("hidden");
+            openDropdown.classList.remove("dropdown-open");
+        }
+    });
+  
+    bubbleWrapper.appendChild(msgBubble);
+    bubbleWrapper.appendChild(arrow);
+    bubbleWrapper.appendChild(dropdown);
+    div.appendChild(bubbleWrapper);
+    if (chatBox) {
+        chatBox.appendChild(div);
+    }
+  }
+  
+  // -------------------- Handle Reply --------------------
+  function handleReply(username, message) {
+    const input = document.getElementById("message-input");
+    const replyPreview = document.createElement("div");
+    replyPreview.className = "bg-gray-200 dark:bg-gray-700 p-2 rounded text-sm mb-2 flex justify-between items-center";
+
+    replyPreview.innerHTML = `
+      <span><strong>${username}:</strong> ${message.slice(0, 50)}...</span>
+      <button id="cancel-reply" class="text-red-500 text-xs ml-2">✖</button>
+    `;
+
+    document.querySelector("#reply-preview")?.remove();
+    replyPreview.id = "reply-preview";
+
+    const form = document.getElementById("chat-form");
+    form.parentNode.insertBefore(replyPreview, form);
+
+    input.focus();
+    document.getElementById("cancel-reply").addEventListener("click", () => {
+      replyPreview.remove();
+    });
+  }
+
+  // -------------------- Open Forward Modal --------------------
+  function openForwardModal(selectedMessageIds = [], senderName = "", messageText = "") {
+    console.log("🟢 openForwardModal called", { selectedMessageIds, senderName, messageText });
+
+    // agar kuch select nahi hua
+    if (selectedMessageIds.length === 0 && !messageText) {
+      alert("Please select at least one message!");
+      return;
+    }
+
+    // 🧱 Modal overlay
+    const modal = document.createElement("div");
+    modal.className = `fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50`;
+    modal.id = "forward-modal";
+
+    // 🧱 Modal box
+    const box = document.createElement("div");
+    box.className = `bg-white dark:bg-gray-800 text-black dark:text-white p-5 rounded-2xl shadow-xl w-80 animate-fadeIn`;
+
+    box.innerHTML = `
+      <h2 class="text-lg font-semibold mb-3">Forward Message</h2>
+      ${
+        messageText
+          ? `<p class="text-sm mb-3 opacity-80 truncate">"${messageText}"</p>`
+          : `<p class="text-sm mb-3 opacity-80">${selectedMessageIds.length} message(s) selected</p>`
+      }
+
+      <label class="block text-sm mb-1">Select User or Group:</label>
+      <select id="forward-room" class="w-full p-2 mb-4 rounded bg-gray-100 dark:bg-gray-700">
+        <option value="" disabled selected>Select chat...</option>
+      </select>
+
+      <div class="flex justify-end gap-2">
+        <button id="cancel-forward" class="px-3 py-1 rounded bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500">Cancel</button>
+        <button id="confirm-forward" class="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700">Send</button>
+      </div>
+    `;
+
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+
+    // ❌ Cancel button
+    box.querySelector("#cancel-forward").addEventListener("click", () => modal.remove());
+
+    // ✅ Confirm forward
+    box.querySelector("#confirm-forward").onclick = async () => {
+      const selected = document.getElementById("forward-room").value;
+      if (!selected) return alert("Please select a chat.");
+
+      const [type, ...rest] = selected.split("-");
+      const name = rest.join("-");
+      console.log("📤 Forwarding to:", type, name);
+
+      try {
+        const res = await fetch("/forward_message/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken"),
+          },
+          body: JSON.stringify({
+            selected_message_ids: selectedMessageIds, // ✅ FIXED KEYS
+            sender_name: senderName,
+            message_text: messageText,
+            target_type: type, // ✅ FIXED KEYS
+            target_name: name,
+          }),
+        });
+
+        const data = await res.json();
+        console.log("✅ Forward response:", data);
+
+        if (data.success) {
+          modal.remove();
+
+          // ✅ Redirect to correct chat page
+          if (data.redirect_url) {
+            // window.location.href = data.redirect_url;
+          } else {
+            alert("✅ Message forwarded successfully!");
+          }
+        } else {
+          console.error("❌ Forward Error:", data.error);
+          alert(`⚠️ Failed to forward message:\n${data.error || "Unknown error"}`);
+        }
+      } catch (err) {
+        console.error("Error forwarding:", err);
+        alert("⚠️ Something went wrong while forwarding!");
+      }
+    };
+  }
+  window.openForwardModal = openForwardModal;
+
+  // -------------------- Handle Delete --------------------
+  function handleDelete(messageDiv, username, messageId) {
+    if (!confirm("Are you sure you want to delete this message?")) return;
+
+    // 1️⃣ Delete from backend so reload ke baad wapas na aaye
+    fetch(`/delete_message/${messageId}/`, {
+      method: "DELETE",
+      headers: { "X-CSRFToken": getCookie("csrftoken") },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          // 2️⃣ Remove from DOM instantly
+          if (messageDiv) messageDiv.remove();
+          console.log(`✅ Message deleted (ID: ${messageId})`);
+
+          // 3️⃣ Inform WebSocket to remove from both sides instantly
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+              type: "delete_message",
+              msg_id: messageId
+            }));
+          }
+        } else {
+          console.error("❌ Delete failed:", data.error);
+        }
+      })
+      .catch((err) => console.error("⚠️ Error deleting message:", err));
+  }
+
+  // -------------------- Update User Status --------------------
+  function updateUserStatus(username, isOnline) {
+    const el = document.querySelector(`#sidebar-user-${username}`);
+      if (!el) return;
+      const span = el.querySelector("span");
+      if (span) {
+        // span.textContent = isOnline ? "🟢" : "⚪";
+        // span.classList.toggle("text-green-500", isOnline);
+        span.classList.toggle("text-gray-400", !isOnline);
+      }
+    }
+});
+</script>
+<script>
+  // -------------------- Open Private Chat --------------------
+  window.openPrivateChat = function (username) {
+
+      const currentUrl =
+          new URL(window.location.href);
+
+      const currentChat =
+          currentUrl.searchParams.get("chat");
+
+      // ✅ same chat already open
+      if (currentChat === username) {
+          return;
+      }
+
+      // ✅ new chat open
+      window.location.href = `/?chat=${username}`;
+  };
+
+  window.openGroupChat = function (groupName) {
+
+      if (!groupName) {
+          console.error("❌ groupName missing");
+          return;
+      }
+
+      window.location.href =
+          `${window.location.origin}/?group=${groupName}`;
+  };
+</script>
+
+<script>
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === name + "=") {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+function toggleBlock(username, action) {
+  fetch('/privacy/toggle-block/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken'),
+    },
+    body: JSON.stringify({ username, action }),
+  })
+  .then(res => res.json())
+  .then(data => {
+
+    const container = document.getElementById("block-toggle-container");
+    const msgInput = document.getElementById("message-input");
+    const sendBtn = document.querySelector("#chat-form button[type='submit']");
+
+    //--------------- IF USER BLOCKED-----------------
+    if (data.status === 'blocked') {
+
+      container.innerHTML = `
+        <button id="blockUserBtn" onclick="toggleBlock('${data.username}', 'unblock')" 
+          class="w-full text-left text-green-500 hover:text-green-700">
+          ✅ Unblock ${data.username}
+        </button>`;
+
+      if (msgInput) {
+        msgInput.disabled = true;
+        msgInput.placeholder = "You blocked this user ❌";
+      }
+      if (sendBtn) sendBtn.disabled = true;
+
+      alert(`${data.username} has been blocked 🚫`);
+    }
+
+    //----------- IF USER UNBLOCKED ----------------
+    else if (data.status === 'unblocked') {
+
+      // Change to BLOCK button
+      container.innerHTML = `
+        <button id="blockUserBtn" onclick="toggleBlock('${data.username}', 'block')" 
+          class="w-full text-left text-red-500 hover:text-red-700">
+          🚫 Block ${data.username}
+        </button>`;
+
+      // Enable input + send
+      if (msgInput) {
+        msgInput.disabled = false;
+        msgInput.placeholder = "Type a message...";
+      }
+      if (sendBtn) sendBtn.disabled = false;
+
+      alert(`${data.username} has been unblocked ✅`);
+    }
+
+  })
+  .catch(err => {
+    console.error("❌ Block/Unblock Error:", err);
+    alert("Something went wrong.");
   });
+}
+
+
+// --------------- AUTO DISABLE INPUT ON PAGE RELOAD IF USER IS BLOCKED ---------------
+document.addEventListener("DOMContentLoaded", function () {
+  const isBlocked = "{{ is_blocked }}";   // Django passes TRUE/FALSE
+  const msgInput = document.getElementById("message-input");
+  const sendBtn = document.querySelector("#chat-form button[type='submit']");
+
+  if (isBlocked === "True") {
+    if (msgInput) {
+      msgInput.disabled = true;
+      msgInput.placeholder = "You blocked this user ❌";
+    }
+    if (sendBtn) sendBtn.disabled = true;
+  }
+});
+</script>
+
+<script>
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith(name + "=")) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+// ------------ Delete messsage in profile----------------------
+function deleteChatFromProfile(username) {
+
+  if (!confirm(`Delete entire chat with ${username}?`)) return;
+
+  fetch(`/delete_chat/${username}/`, {
+    method: "POST",
+    headers: { "X-CSRFToken": getCookie("csrftoken"),
+      "Content-Type": "application/json",
+     },
+     body: JSON.stringify({ delete: true })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+
+      // Remove messages from DOM
+      document.querySelectorAll(".message").forEach(msg => msg.remove());
+
+      const chatBox = document.getElementById("chat-box");
+      if (!chatBox) {
+          console.log("⚠️ chat-box not found");
+          return;
+      }
+      if (chatBox) chatBox.innerHTML = "";
+
+      // Inform WebSocket
+      if (typeof socket !== "undefined" && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+          type: "delete_chat",
+          username: username,
+        }));
+      }
+
+      alert("Chat deleted successfully ✔️");
+    } 
+    else {
+      alert("Delete failed ❌: " + data.error);
+    }
+  })
+  .catch(err => console.error("Error:", err));
+}
 </script>
 {% endblock %}

@@ -3,171 +3,357 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>{% block title %}Chat App{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="icon" href="{% static 'favicon.ico' %}" type="image/x-icon">
+    <link rel="shortcut icon" href="{% static 'favicon.ico' %}" type="image/x-icon">
+
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script> -->
+
+    <script>
+      tailwind.config = { darkMode: 'class' }
+    </script>
+     <style>
+       [x-cloak] { display: none; }
+      </style>
+
     {% block extra_head %}{% endblock %}
   </head>
-  <body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+
+  <body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen flex flex-col
+    {% if profile.chat_wallpaper_default %}
+      chat-theme-{{ profile.chat_wallpaper_default }}
+    {% endif %}
+    {% if profile.chat_wallpaper_default == 'color' and profile.chat_color_theme %}
+      chat-color-{{ profile.chat_color_theme }}
+    {% endif %}
+  ">
+  
+
     <!-- Navbar -->
-    <nav class="bg-white shadow-md">
+    <nav class="bg-white dark:bg-gray-800 shadow-md z-50 relative">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-        <div class="text-xl font-semibold text-indigo-600">
+        <!-- Logo -->
+        <div class="text-xl font-semibold text-indigo-600 dark:text-indigo-400">
           <a href="{% url 'home' %}">💬 ChatApp</a>
         </div>
-        <div class="space-x-4 text-sm sm:text-base">
+
+        <!-- Desktop Menu -->
+        <div class="hidden md:flex space-x-4 text-sm sm:text-base items-center">
           {% if user.is_staff %}
-          <a href="{% url 'admin_dashboard' %}" class="text-gray-700 hover:text-indigo-600">📊 Admin</a>
+            <a href="{% url 'admin_dashboard' %}" class="text-gray-700 dark:text-gray-300 hover:text-indigo-600">📊 Admin</a>
           {% endif %}
+
           {% if user.is_authenticated %}
-          <a href="{% url 'profile' %}" class="text-gray-700 hover:text-indigo-600">👤 Hi, {{ user.first_name }}</a>
-          <a href="{% url 'logout' %}" class="text-red-600 hover:text-red-800">🚪 Logout</a>
-          <a href="{% url 'about' %}" class="text-gray-600 hover:text-indigo-600 font-medium">About</a>
+            <!-- <a href="{% url 'profile' %}" class="text-gray-700 dark:text-gray-300 hover:text-indigo-500 dark:hover:text-indigo-400">👤 Hi, {{ user.first_name }}</a> -->
+            <a href="{% url 'create_room_ajax' %}" class="text-green-600 hover:text-green-700 font-medium">➕ Create Room</a>
+            <a href="{% url 'about' %}" class="text-gray-600 hover:text-gray-400 dark:text-gray-300 dark:hover:text-gray-400 font-medium">About</a>
+
+            <!-- Settings Dropdown (Alpine.js) -->
+            <div class="relative inline-block text-left" x-data="{ open: false }" @click.away="open = false">
+              <button @click="open = !open" type="button"
+                class="inline-flex justify-center w-full rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                id="menu-button" aria-expanded="true" aria-haspopup="true"
+              >
+                ⚙️ Settings
+                
+                <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              <!-- Dropdown menu -->
+              <div x-show="open" x-transition
+                class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
+                role="menu" aria-orientation="vertical" aria-labelledby="menu-button" tabindex="-1"
+                x-cloak
+              >
+                <div class="py-1" role="none">
+                  <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm hover:bg-indigo-600 hover:text-white">Profile</a>
+                  <a href="{% url 'account_settings' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-indigo-600 hover:text-white" role="menuitem" tabindex="-1">Account</a>
+                  <a href="{% url 'privacy_settings' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-indigo-600 hover:text-white" role="menuitem" tabindex="-1">Privacy</a>
+                  <a href="{% url 'chat_theme' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-indigo-600 hover:text-white" role="menuitem" tabindex="-1">Chat Theme</a>
+                  <a href="{% url 'notification_settings' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-indigo-600 hover:text-white" role="menuitem" tabindex="-1">Notification Settings</a>
+                  <div class="border-t border-gray-100 dark:border-gray-700"></div>
+                  <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-600 hover:text-white" role="menuitem" tabindex="-1">Logout</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dark Mode Toggle Button -->
+            <button
+              id="theme-toggle"
+              onclick="toggleDarkMode()"
+              class="text-indigo-600 hover:text-indigo-800 px-3 py-1 rounded text-sm hover:shadow transition ml-4"
+            >
+              🌙 
+            </button>
+
+            <i id="app-lock-icon" class="fas fa-toggle-off text-gray-400 text-xl cursor-pointer ml-2"></i>
+
           {% else %}
-          <a href="{% url 'login' %}" class="text-indigo-600 hover:text-indigo-800">🔑 Login</a>
-          <a href="{% url 'signup' %}" class="text-indigo-600 hover:text-indigo-800">👤 Signup</a>
+            <a href="{% url 'login' %}" class="text-indigo-600 hover:text-indigo-800 hover:shadow">🔑 Login</a>
+            <a href="{% url 'signup' %}" class="text-indigo-600 hover:text-indigo-800 hover:shadow">👤 Signup</a>
+            <button
+              id="theme-toggle"
+              onclick="toggleDarkMode()"
+              class="text-indigo-600 hover:text-indigo-800 px-3 py-1 rounded text-sm hover:shadow transition ml-4 text-right"
+            >
+              🌙 
+            </button>
           {% endif %}
         </div>
+
+        <!-- Hamburger Button -->
+        <button class="md:hidden text-2xl text-indigo-600" onclick="toggleMenu()">☰</button>
       </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="flex-grow">
-      <div class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {% block content %}{% endblock %}
-        <div id="chat-box" class="space-y-2 mt-4"></div>
-        <p id="typing-status" class="text-sm text-gray-500 italic mt-2 text-center"></p>
+    <!-- Right-side Off-canvas Mobile Menu -->
+    <div
+      id="mobileMenu"
+      class="fixed top-0 right-0 h-full w-48 md:w-64 bg-white dark:bg-gray-800 shadow-lg transform translate-x-full transition-transform duration-300 z-50"
+    >
+    <div
+      x-data="{ settingsOpen: false, darkMode: localStorage.getItem('theme') === 'dark' }"
+      x-effect="document.documentElement.classList.toggle('dark', darkMode); localStorage.setItem('theme', darkMode ? 'dark' : 'light')"
+      class="p-4 pt-12 space-y-4 text-right relative"
+    >
+      <!-- 🌙 Dark Mode Toggle (Top Left Inside Sidebar) -->
+      <div class="absolute top-4 left-4">
+        <button
+          @click="darkMode = !darkMode"
+          class="text-yellow-400 text-xl"
+        >
+          <i class="fas" :class="darkMode ? 'fa-sun' : 'fa-moon'"></i>
+        </button>
       </div>
+
+      <!-- Full Sidebar -->
+        <button onclick="toggleMenu()" class="text-red-600 hover:text-red-800 text-lg absolute top-4 right-4">✖</button>
+
+        {% if user.is_authenticated %}
+          <a href="{% url 'create_room_ajax' %}" class="block text-green-600 hover:text-green-800 font-medium">➕ Create Room</a>
+          <a href="{% url 'about' %}" class="block text-gray-300 hover:text-indigo-600 font-medium">About</a>
+
+          <!-- Settings Toggle -->
+          <button
+            @click="settingsOpen = !settingsOpen"
+            class="block text-gray-500 hover:text-indigo-600 font-medium w-full text-right"
+          >
+            ⚙️ Settings
+          </button>
+        
+          <!-- Settings Items -->
+          <div x-show="settingsOpen" x-transition class="space-y-2 pr-2 text-sm text-center mt-2" x-cloak>
+            <a href="{% url 'profile' %}" class="block text-gray-700 dark:text-gray-300 hover:bg-indigo-600 hover:text-white rounded px-3 py-1">Profile</a>
+            <a href="{% url 'account_settings' %}" class="block text-gray-700 dark:text-gray-300 hover:bg-indigo-600 hover:text-white rounded px-3 py-1">Account</a>
+            <a href="{% url 'privacy_settings' %}" class="block text-gray-700 dark:text-gray-300 hover:bg-indigo-600 hover:text-white rounded px-3 py-1">Privacy</a>
+            <a href="{% url 'chat_theme' %}" class="block text-gray-700 dark:text-gray-300 hover:bg-indigo-600 hover:text-white rounded px-3 py-1">Chat Theme</a>
+            <a href="{% url 'notification_settings' %}" class="block text-gray-700 dark:text-gray-300 hover:bg-indigo-600 hover:text-white rounded px-3 py-1">Notification Settings</a>
+            <div class="border-t border-gray-200 dark:border-gray-600 my-2"></div>
+            <a href="{% url 'logout' %}" class="block text-red-600 hover:bg-red-600 hover:text-white rounded px-3 py-1">Logout</a>
+          </div>
+        {% else %}
+          <a href="{% url 'login' %}" class="block text-indigo-600 hover:text-indigo-800 hover:shadow">🔑 Login</a>
+          <a href="{% url 'signup' %}" class="block text-indigo-600 hover:text-indigo-800 hover:shadow">👤 Signup</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Backdrop -->
+    <div
+      id="menuBackdrop"
+      class="fixed inset-0 bg-black bg-opacity-50 hidden z-40"
+      onclick="toggleMenu()"
+    ></div>
+
+    <!-- Main Content -->
+    <main class="flex-grow overflow-y-auto">
+      {% block content_wrapper %}
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 min-h-full ">
+          {% block content %}{% endblock %}
+
+        <div id="appLockPrompt" class="fixed inset-0 bg-black bg-opacity-60 hidden justify-center items-center z-50">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded shadow-lg w-full max-w-sm text-center">
+          <h2 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">🔒 Enter App Lock Password</h2>
+          <input id="unlockPassword" type="password" class="w-full px-3 py-2 mb-4 border rounded dark:bg-gray-700 dark:text-white" placeholder="Enter your password" />
+          <button id="submitUnlock" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Unlock</button>
+          <p id="unlockError" class="text-red-500 text-sm mt-2 hidden">❌ Incorrect password</p>
+        </div>
+      </div>
+
+      {% endblock %}
       <audio id="notification-sound" src="{% static 'sounds/notification.mp3' %}" preload="auto"></audio>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white text-center text-sm py-4 text-gray-500 shadow-inner">
+    <footer
+      class="bg-white dark:bg-gray-800 text-center text-sm py-3 text-gray-500 dark:text-gray-400 shadow-inner mb-8 md:mb-0"
+    >
       © {{ year|default:2025 }} ChatApp. All rights reserved.
     </footer>
 
-    <!-- Scripts -->
+    <!-- Theme Toggle Script -->
     <script>
-      const currentUsername = "{{ request.user.username|escapejs }}";
-      const currentName = "{{ request.user.first_name|escapejs }}";
-      const chatBox = document.getElementById("chat-box");
-      const messageInput = document.getElementById("message-input");
-      const roomSlug = "{{ selected_room.slug|default:'' }}";
-      const privateRoomSlug = "{{ private_room.room_slug|default:'' }}";
-      const isPrivateChat = Boolean("{{ private_room.room_slug|default:'' }}");
-      const activeRoomSlug = isPrivateChat ? privateRoomSlug : roomSlug;
-      const typingTimeout = 3000;
-      let typingTimer;
-
-      if (activeRoomSlug) {
-        const chatSocket = new WebSocket(
-          (window.location.protocol === "https:" ? "wss://" : "ws://") +
-          window.location.host +
-          (isPrivateChat ? "/ws/private/" : "/ws/chat/") +
-          activeRoomSlug + "/"
-        );
-
-        chatSocket.onmessage = function (e) {
-          const data = JSON.parse(e.data);
-
-          if (data.type === "typing" && data.username !== currentUsername) {
-            showTypingIndicator(data.name);
-            return;
-          }
-
-          if (data.type === "stop_typing" && data.username !== currentUsername) {
-            removeTypingIndicator();
-            return;
-          }
-
-          if (data.type === "notification") {
-            const notificationSound = document.getElementById("notification-sound");
-            notificationSound.play();
-            return;
-          }
-
-          if (!data.message) return;
-
-          let messageHtml = "";
-
-          if (data.username === "System") {
-            messageHtml = `
-            <div class="text-center">
-              <p class="text-gray-500 italic">${data.message}</p>
-            </div>`;
-          } else if (data.username === currentUsername) {
-            messageHtml = `
-              <div class="text-right">
-                <div class="inline-block bg-blue-100 text-blue-900 px-3 py-2 rounded-lg mb-1">
-                  <div class="flex justify-between gap-10 items-center text-sm">
-                    <p class="font-semibold">${currentUsername}</p>
-                    <small class="text-gray-500 text-xs">${new Date().toLocaleTimeString([], {hour: "2-digit",minute: "2-digit"})}</small>
-                  </div>
-                  <p>${data.message}</p>
-                </div>
-              </div>`;
-          } else {
-            messageHtml = `
-              <div class="text-left">
-                <div class="inline-block bg-gray-100 text-gray-800 px-3 py-2 rounded-lg mb-1">
-                  <div class="flex justify-between gap-10 items-center text-sm">
-                    <p class="font-semibold">${data.name}</p>
-                    <small class="text-gray-500 text-xs">${new Date().toLocaleTimeString([], {hour: "2-digit",minute: "2-digit"})}</small>
-                  </div>
-                  <p>${data.message}</p>
-                </div>
-              </div>`;
-          }
-
-          chatBox.innerHTML += messageHtml;
-          chatBox.scrollTop = chatBox.scrollHeight;
-          removeTypingIndicator(); // typing status remove after message
-        };
-
-        chatSocket.onclose = function () {
-          console.error("Chat socket closed unexpectedly");
-        };
-
-        document.getElementById("chat-form").onsubmit = function (e) {
-          e.preventDefault();
-          const message = messageInput.value;
-          if (message.trim()) {
-            chatSocket.send(JSON.stringify({
-              type: "chat",
-              message, 
-              username: currentUsername,
-              name: currentName
-            }));
-            messageInput.value = "";
-          }
-        };
-
-        messageInput.addEventListener("input", () => {
-          chatSocket.send(JSON.stringify({
-            type: "typing",
-            username: currentUsername,
-            name: currentName
-          }));
-
-          clearTimeout(typingTimer);
-          typingTimer = setTimeout(() => {
-            chatSocket.send(JSON.stringify({
-              type: "stop_typing",
-              username: currentUsername
-            }));
-          }, typingTimeout);
-        });
-
-        function showTypingIndicator(name) {
-          const typingStatus = document.getElementById("typing-status");
-          typingStatus.textContent = `${name} is typing...`;
-        }
-
-        function removeTypingIndicator() {
-          const typingStatus = document.getElementById("typing-status");
-          typingStatus.textContent = "";
+      function toggleDarkMode() {
+        const html = document.documentElement;
+        const toggleButton = document.getElementById("theme-toggle");
+        if (html.classList.contains("dark")) {
+          html.classList.remove("dark");
+          localStorage.setItem("theme", "light");
+          toggleButton.innerHTML = "🌙";
+        } else {
+          html.classList.add("dark");
+          localStorage.setItem("theme", "dark");
+          toggleButton.innerHTML = "☀️";
         }
       }
+
+      window.onload = () => {
+        const savedTheme = localStorage.getItem("theme");
+        const html = document.documentElement;
+        const toggleButton = document.getElementById("theme-toggle");
+        if (savedTheme === "dark") {
+          html.classList.add("dark");
+          if (toggleButton) toggleButton.innerHTML = "☀️";
+        } else {
+          html.classList.remove("dark");
+          if (toggleButton) toggleButton.innerHTML = "🌙";
+        }
+      };
     </script>
+
+<!-- Mobile Menu Script -->
+<script>
+  function toggleMenu() {
+    const menu = document.getElementById('mobileMenu');
+    const backdrop = document.getElementById('menuBackdrop');
+    if (menu.classList.contains('translate-x-full')) {
+      menu.classList.remove('translate-x-full');
+      backdrop.classList.remove('hidden');
+    } else {
+      menu.classList.add('translate-x-full');
+      backdrop.classList.add('hidden');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+
+    const wallpaperDefault = localStorage.getItem("chatWallpaperDefault");
+    const colorTheme = localStorage.getItem("chatColorTheme");
+
+    if (wallpaperDefault) {
+      document.body.classList.add(`chat-theme-${wallpaperDefault}`);
+      if (wallpaperDefault === "color" && colorTheme) {
+        document.body.classList.add(`chat-color-${colorTheme}`);
+      }
+    }
+
+    // ✅ FIXED: correct element
+    const appLockToggle = document.getElementById('app-lock-icon');
+
+    const isAppLockEnabled = "{{ profile.app_lock_enabled|yesno:'true,false' }}" === "true";
+
+    function updateAppLockIcon(enabled) {
+      const appLockIcon = document.getElementById("app-lock-icon");
+
+      if (!appLockIcon) return;
+
+      if (enabled) {
+        appLockIcon.className = 'fas fa-toggle-on text-blue-500 text-xl cursor-pointer ml-2';
+      } else {
+        appLockIcon.className = 'fas fa-toggle-off text-gray-400 text-xl cursor-pointer ml-2';
+      }
+    }
+
+    updateAppLockIcon(isAppLockEnabled);
+
+    // ✅ Password Modal
+    const passwordModalHTML = `
+    <div id="passwordModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+      <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-6 rounded-2xl shadow-xl w-80">
+        <h2 class="text-lg font-semibold mb-4">🔒 Set App Lock Password</h2>
+        <input type="password" id="appLockPassword" class="w-full p-2 rounded border dark:bg-gray-700 mb-4" placeholder="Enter password"/>
+        <div class="flex justify-end gap-3">
+          <button id="setPasswordBtn" class="px-4 py-2 bg-blue-600 text-white rounded">Set</button>
+          <button id="cancelPasswordBtn" class="px-4 py-2 bg-gray-500 text-white rounded">Cancel</button>
+        </div>
+      </div>
+    </div>
+    `;
+
+    function showPasswordModal() {
+      if (!document.getElementById('passwordModal')) {
+        document.body.insertAdjacentHTML('beforeend', passwordModalHTML);
+
+        document.getElementById('cancelPasswordBtn').onclick = () => {
+          document.getElementById('passwordModal').remove();
+        };
+
+        document.getElementById('setPasswordBtn').onclick = () => {
+          const pwd = document.getElementById('appLockPassword').value.trim();
+
+          if (pwd.length < 4) {
+            alert('Password must be at least 4 characters');
+            return;
+          }
+
+          fetch("{% url 'set_app_lock_password' %}", {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': '{{ csrf_token }}',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ password: pwd })
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === 'success') {
+              updateAppLockIcon(true);
+              document.getElementById('passwordModal').remove();
+            } else {
+              alert(data.message || 'Error');
+            }
+          });
+        };
+      }
+    }
+
+    // ✅ SAFE EVENT LISTENER (NO CRASH)
+    if (appLockToggle) {
+      appLockToggle.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        fetch("{% url 'toggle_app_lock' %}", {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({})
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            updateAppLockIcon(data.enabled);
+          } else if (data.status === 'need_password') {
+            showPasswordModal();
+          } else {
+            alert('Error updating setting');
+          }
+        });
+      });
+    }
+
+  });
+</script>
+
   </body>
 </html>

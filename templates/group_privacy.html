@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Group Privacy Settings{% endblock %}
+{% block content %}
+
+<div class="mb-3">
+    <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition p-1">
+        🔙 Back
+    </a>
+</div>
+
+<div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6 space-y-6">
+    <h2 class="text-xl font-semibold text-center">Who can add you to groups?</h2>
+
+    <form id="groupPrivacyForm" class="space-y-6">
+        {% csrf_token %}
+
+        <label class="flex items-center space-x-6 text-lg">
+            <input type="radio" name="group_privacy" value="everyone"
+                   class="w-5 h-5" {% if profile.group_privacy == 'everyone' %}checked{% endif %}>
+            <span>Everyone</span>
+        </label>
+        
+        <label class="flex items-center space-x-6 text-lg">
+            <input type="radio" name="group_privacy" value="contacts"
+                   class="w-5 h-5" {% if profile.group_privacy == 'contacts' %}checked{% endif %}>
+            <span>My Contacts</span>
+        </label>
+
+        <label class="flex items-center space-x-6 text-lg">
+            <input type="radio" name="group_privacy" value="contacts_except"
+                   class="w-5 h-5" {% if profile.group_privacy == 'contacts_except' %}checked{% endif %}>
+            <span>My Contacts Except</span>
+        </label>
+    </form>
+
+    <p id="saveStatus" class="text-green-600 text-sm font-medium hidden transition-opacity duration-300">
+        ✔ Setting saved
+    </p>
+
+    <p class="text-gray-500 dark:text-gray-200 text-sm">
+        If you select "My Contacts Except", you will be prompted to choose specific contacts who will not be able to add you to groups. This setting helps you manage who can include you in group conversations. <br> <br>
+        Admins of groups you are added to will be able to see your phone number. This is necessary for group functionality and cannot be changed.
+    </p>
+</div>
+
+<script>
+    const status = document.getElementById('saveStatus');
+
+    document.querySelectorAll('input[name="group_privacy"]').forEach(function(radio) {
+        radio.addEventListener('change', function () {
+            const selectedValue = this.value;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            fetch("{% url 'group_privacy' %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": csrfToken,
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: `group_privacy=${selectedValue}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    status.classList.remove('hidden');
+                    status.classList.add('opacity-100');
+
+                    setTimeout(() => {
+                        status.classList.add('hidden');
+                        status.classList.remove('opacity-100');
+                    }, 2000);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

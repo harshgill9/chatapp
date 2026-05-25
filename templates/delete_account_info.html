@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}How to Delete Your Account{% endblock %}
+
+{% block content %}
+
+<div class="mt-6">
+    <a href="{% url 'account_settings' %}" class="inline-block text-blue-600 dark:text-blue-400 hover:underline">
+        🔙 Back to Account Settings
+    </a>
+</div>
+<div class="container mt-5 max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-6">
+
+    <h2 class="text-3xl font-bold text-red-600 dark:text-red-400">❌ How to Delete Your Account</h2>
+    
+    <p class="text-gray-700 dark:text-gray-300">
+        You can delete your account from within WhatsApp. <strong>Deleting your account is irreversible.</strong> We can't restore your account if deleted accidentally.
+    </p>
+
+    <div class="border-l-4 border-yellow-400 bg-yellow-50 dark:bg-yellow-900/40 p-4">
+        <p class="text-sm text-yellow-800 dark:text-yellow-200">
+            <strong>Note:</strong> You must be logged in on your <strong>primary device</strong> to delete your account. This cannot be done from a linked device.
+        </p>
+    </div>
+
+    <h3 class="text-xl font-semibold text-gray-800 dark:text-white">📱 Steps to Delete Your Account</h3>
+    <ol class="list-decimal pl-6 text-gray-700 dark:text-gray-300 space-y-2">
+        <li>Open WhatsApp.</li>
+        <li>Tap <strong>More Options </strong> > <strong>Settings</strong> > <strong>Account</strong> > <strong>Delete my account</strong>.</li>
+        <li>Enter your phone number in full international format.</li>
+        <li>Tap <strong>Delete account</strong>.</li>
+        <li>Select a reason for deletion from the dropdown.</li>
+        <li>Tap <strong>Delete account</strong> again to confirm.</li>
+    </ol>
+
+    <h3 class="text-xl font-semibold text-gray-800 dark:text-white">🧾 What Happens When You Delete</h3>
+    <ul class="list-disc pl-6 text-gray-700 dark:text-gray-300 space-y-2">
+        <li>Deletes your account and removes it from all devices.</li>
+        <li>Erases your entire message history.</li>
+        <li>Removes you from all WhatsApp groups.</li>
+        <li>Deletes any Google Account backup linked to WhatsApp.</li>
+        <li>Removes you as a channel admin or follower (but not your past activity).</li>
+        <li>Deletes any channel you created, if there are no other admins.</li>
+    </ul>
+
+    <h3 class="text-xl font-semibold text-gray-800 dark:text-white">⏳ After Deletion</h3>
+    <ul class="list-disc pl-6 text-gray-700 dark:text-gray-300 space-y-2">
+        <li>You <strong>cannot recover</strong> your account.</li>
+        <li>It may take <strong>up to 90 days</strong> to fully erase your data from backups.</li>
+        <li>Your information may still exist in logs (disconnected from your identity).</li>
+        <li>Legal, security, or terms violation data may be retained.</li>
+        <li>Your shared info with other Meta companies will also be deleted.</li>
+    </ul>
+
+    <h3 class="text-xl font-semibold text-gray-800 dark:text-white">📢 Channels</h3>
+    <ul class="list-disc pl-6 text-gray-700 dark:text-gray-300 space-y-2">
+        <li>If you're a <strong>channel owner</strong>, delete your channel first before deleting your account.</li>
+        <li>If no other admins exist, your channel will be permanently deleted.</li>
+        <li>Channel updates remain visible to followers even after deletion.</li>
+        <li>If there are other admins, ownership transfers to the longest-following admin.</li>
+    </ul>
+
+    <h3 class="text-xl font-semibold text-gray-800 dark:text-white">📌 Final Notes</h3>
+    <ul class="list-disc pl-6 text-gray-700 dark:text-gray-300 space-y-2">
+        <li>Ask your contacts to restart WhatsApp if they still see you as a user.</li>
+        <li>This won’t delete their existing chat with you, only removes your profile from their contacts.</li>
+    </ul>
+
+    <hr>
+
+    <div class="flex justify-center mt-6">
+        <form method="post" action="{% url 'delete_account_permanently' %}" onsubmit="return confirm('Are you sure you want to delete your account permanently?');">
+            {% csrf_token %}
+            <button 
+                type="submit" 
+                class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded transition">
+                🗑️ Delete My Account
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

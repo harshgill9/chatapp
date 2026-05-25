@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+{% block title %}Notification Settings{% endblock %}
+{% block content %}
+
+<div class="max-w-lg mx-auto mt-10 p-6 bg-white dark:bg-gray-800 shadow rounded-lg">
+  <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">🔔 Notification Settings</h2>
+
+  <div class="space-y-4">
+    <!-- Master Mute -->
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="font-medium text-gray-700 dark:text-gray-200">Mute All Notifications</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Turns off every notification from the chat.</p>
+      </div>
+      <label class="inline-flex items-center cursor-pointer" title="Mute All">
+        <input id="muteAllToggle" aria-label="Mute all notifications" type="checkbox" class="sr-only" />
+        <div class="w-11 h-6 bg-gray-200 rounded-full relative transition-colors" id="muteAllTrack"></div>
+      </label>
+    </div>
+
+    <hr class="border-t">
+
+    <!-- Message Notification -->
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="font-medium text-gray-700 dark:text-gray-200">Message Notifications</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Show alerts for new messages.</p>
+      </div>
+      <label class="inline-flex items-center cursor-pointer" title="Message Notifications">
+        <input id="msgNotifToggle" aria-label="Message notifications" type="checkbox" class="sr-only" />
+        <div class="w-11 h-6 bg-gray-200 rounded-full relative transition-colors" id="msgNotifTrack"></div>
+      </label>
+    </div>
+
+    <!-- Sound Notification -->
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="font-medium text-gray-700 dark:text-gray-200">Sound</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Play sound for incoming messages.</p>
+      </div>
+      <label class="inline-flex items-center cursor-pointer" title="Sound Notifications">
+        <input id="soundToggle" aria-label="Sound notifications" type="checkbox" class="sr-only" />
+        <div class="w-11 h-6 bg-gray-200 rounded-full relative transition-colors" id="soundTrack"></div>
+      </label>
+    </div>
+
+    <!-- Desktop Notification -->
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="font-medium text-gray-700 dark:text-gray-200">Desktop Notifications</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Show browser notifications (requires permission).</p>
+      </div>
+      <label class="inline-flex items-center cursor-pointer" title="Desktop Notifications">
+        <input id="desktopToggle" aria-label="Desktop notifications" type="checkbox" class="sr-only" />
+        <div class="w-11 h-6 bg-gray-200 rounded-full relative transition-colors" id="desktopTrack"></div>
+      </label>
+    </div>
+
+    <!-- Vibrate (mobile) -->
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="font-medium text-gray-700 dark:text-gray-200">Vibrate (Mobile)</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Trigger vibration on supported devices.</p>
+      </div>
+      <label class="inline-flex items-center cursor-pointer" title="Vibrate">
+        <input id="vibrateToggle" aria-label="Vibrate notifications" type="checkbox" class="sr-only" />
+        <div class="w-11 h-6 bg-gray-200 rounded-full relative transition-colors" id="vibrateTrack"></div>
+      </label>
+    </div>
+
+    <!-- Save -->
+    <div>
+      <button id="saveNotifBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded">💾 Save Notification Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- Optional tiny styles for visible toggle track -->
+<style>
+  /* Basic toggle track visual - you can replace with Tailwind classes if you want */
+  .w-11.h-6 { width: 44px; height: 24px; }
+  .w-11.h-6::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background: white;
+    transition: transform 0.18s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  /* "on" styles are added dynamically via JS by setting background and transform */
+  .w-11.h-6.on { background: #3b82f6; } /* blue */
+  .w-11.h-6.on::after { transform: translateX(20px); }
+</style>
+
+<script>
+  // Helper - get cookie for CSRF
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Elements
+    const muteAllToggle = document.getElementById('muteAllToggle');
+    const msgToggle = document.getElementById('msgNotifToggle');
+    const soundToggle = document.getElementById('soundToggle');
+    const desktopToggle = document.getElementById('desktopToggle');
+    const vibrateToggle = document.getElementById('vibrateToggle');
+
+    const muteAllTrack = document.getElementById('muteAllTrack');
+    const msgTrack = document.getElementById('msgNotifTrack');
+    const soundTrack = document.getElementById('soundTrack');
+    const desktopTrack = document.getElementById('desktopTrack');
+    const vibrateTrack = document.getElementById('vibrateTrack');
+
+    const saveBtn = document.getElementById('saveNotifBtn');
+
+    // Load saved settings from localStorage or defaults
+    const defaults = {
+      muteAll: false,
+      messageNotifications: true,
+      sound: true,
+      desktop: false,
+      vibrate: false
+    };
+
+    const saved = {
+      muteAll: JSON.parse(localStorage.getItem('notif_muteAll') ?? 'null'),
+      messageNotifications: JSON.parse(localStorage.getItem('notif_message') ?? 'null'),
+      sound: JSON.parse(localStorage.getItem('notif_sound') ?? 'null'),
+      desktop: JSON.parse(localStorage.getItem('notif_desktop') ?? 'null'),
+      vibrate: JSON.parse(localStorage.getItem('notif_vibrate') ?? 'null'),
+    };
+
+    const settings = {
+      muteAll: saved.muteAll !== null ? saved.muteAll : defaults.muteAll,
+      messageNotifications: saved.messageNotifications !== null ? saved.messageNotifications : defaults.messageNotifications,
+      sound: saved.sound !== null ? saved.sound : defaults.sound,
+      desktop: saved.desktop !== null ? saved.desktop : defaults.desktop,
+      vibrate: saved.vibrate !== null ? saved.vibrate : defaults.vibrate,
+    };
+
+    // UI binder
+    function reflectToggle(el, track, value) {
+      el.checked = !!value;
+      if (value) track.classList.add('on'); else track.classList.remove('on');
+      // For screen readers ensure aria-pressed-like info:
+      el.setAttribute('aria-checked', !!value);
+    }
+
+    function applyAllToUI() {
+      reflectToggle(muteAllToggle, muteAllTrack, settings.muteAll);
+      reflectToggle(msgToggle, msgTrack, settings.messageNotifications);
+      reflectToggle(soundToggle, soundTrack, settings.sound);
+      reflectToggle(desktopToggle, desktopTrack, settings.desktop);
+      reflectToggle(vibrateToggle, vibrateTrack, settings.vibrate);
+
+      // If muteAll is true => disable others
+      const others = [msgToggle, soundToggle, desktopToggle, vibrateToggle];
+      const otherTracks = [msgTrack, soundTrack, desktopTrack, vibrateTrack];
+      if (settings.muteAll) {
+        others.forEach(o => o.disabled = true);
+        otherTracks.forEach(t => t.style.opacity = 0.5);
+      } else {
+        others.forEach(o => o.disabled = false);
+        otherTracks.forEach(t => t.style.opacity = 1);
+      }
+    }
+
+    applyAllToUI();
+
+    // Toggle click handlers
+    function toggleHandler(propName, el, track) {
+      el.addEventListener('click', () => {
+        // If Mute All is on and user clicks any other toggle, ignore
+        if (propName !== 'muteAll' && settings.muteAll) return;
+        settings[propName] = !settings[propName];
+        // If toggling muteAll: set other toggles off when mute enabled
+        if (propName === 'muteAll') {
+          if (settings.muteAll) {
+            settings.messageNotifications = false;
+            settings.sound = false;
+            settings.desktop = false;
+            settings.vibrate = false;
+          }
+        }
+        applyAllToUI();
+      });
+    }
+
+    toggleHandler('muteAll', muteAllToggle, muteAllTrack);
+    toggleHandler('messageNotifications', msgToggle, msgTrack);
+    toggleHandler('sound', soundToggle, soundTrack);
+    toggleHandler('desktop', desktopToggle, desktopTrack);
+    toggleHandler('vibrate', vibrateToggle, vibrateTrack);
+
+    // Desktop notifications permission flow
+    desktopToggle.addEventListener('click', async () => {
+      // ignore if mute all
+      if (settings.muteAll) return;
+      if (!('Notification' in window)) {
+        alert('This browser does not support desktop notifications.');
+        settings.desktop = false;
+        applyAllToUI();
+        return;
+      }
+      if (Notification.permission === 'granted') {
+        // nothing
+        settings.desktop = !settings.desktop;
+        applyAllToUI();
+        return;
+      }
+      if (Notification.permission !== 'denied') {
+        const perm = await Notification.requestPermission();
+        if (perm === 'granted') {
+          settings.desktop = true;
+        } else {
+          settings.desktop = false;
+        }
+        applyAllToUI();
+      } else {
+        // denied previously
+        alert('You have blocked notifications for this site. Please enable from browser settings.');
+        settings.desktop = false;
+        applyAllToUI();
+      }
+    });
+
+    // Save to server + localStorage
+    saveBtn.addEventListener('click', async () => {
+      // Store to localStorage
+      localStorage.setItem('notif_muteAll', JSON.stringify(settings.muteAll));
+      localStorage.setItem('notif_message', JSON.stringify(settings.messageNotifications));
+      localStorage.setItem('notif_sound', JSON.stringify(settings.sound));
+      localStorage.setItem('notif_desktop', JSON.stringify(settings.desktop));
+      localStorage.setItem('notif_vibrate', JSON.stringify(settings.vibrate));
+
+      // Send to backend
+      try {
+        const csrftoken = getCookie('csrftoken');
+        const resp = await fetch('/update-notification-settings/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+          },
+          body: JSON.stringify(settings)
+        });
+        const data = await resp.json();
+        if (data.status && data.status === 'success') {
+          alert('✅ Notification settings saved.');
+        } else {
+          alert('⚠️ Settings saved locally, but server save failed.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('⚠️ Could not save to server — saved locally.');
+      }
+    });
+
+    // Optional: preview sound when turning sound on
+    soundToggle.addEventListener('click', () => {
+      if (settings.sound && !settings.muteAll) {
+        // play a short beep (use existing site sound if any)
+        const audio = new Audio('/static/sounds/notification.mp3');
+        audio.play().catch(() => {/* ignore */});
+      }
+    });
+
+    // If page wants to use these settings immediately, it can read localStorage keys.
+    // Example keys:
+    // notif_muteAll, notif_message, notif_sound, notif_desktop, notif_vibrate
+
+  }); // DOMContentLoaded
+</script>
+{% endblock %}

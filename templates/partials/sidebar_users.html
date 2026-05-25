@@ -1,0 +1,108 @@
+{% load static %}
+
+{% for user in users %}
+
+<a
+    href="/?chat={{ user.username }}"
+    id="sidebar-user-{{ user.username }}"
+    class="block px-4 py-2 rounded text-gray-700 dark:text-gray-200 flex items-center justify-between group bg-indigo-50 dark:bg-gray-700 hover:bg-indigo-200 dark:hover:bg-gray-600"
+>
+
+    <!-- LEFT SECTION -->
+    <div class="flex items-center gap-3 w-[70%]">
+
+        <!-- PROFILE PIC -->
+        {% if user.profile.profile_pic %}
+        
+            <img
+                src="{{ user.profile.profile_pic.url }}"
+                alt="{{ user.username }}'s profile picture"
+                class="w-8 h-8 rounded-full object-cover"
+            >
+        
+        {% else %}
+        
+            <div class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center font-semibold text-white">
+                {{ user.username|first|upper }}
+            </div>
+        
+        {% endif %}
+
+        <!-- NAME & LAST MESSAGE -->
+        <div class="flex flex-col -space-y-1">
+
+            <span class="font-medium">
+                {{ user.first_name|default:user.username }}
+            </span>
+
+            <span class="last-message text-xs text-gray-500 dark:text-gray-400 truncate max-w-[130px]">
+            
+                {% if user.last_msg %}
+            
+                    {% if user.last_msg_sender %}
+            
+                        {% if user.last_msg_sender == request.user.username %}
+            
+                            <span class="text-blue-500 font-semibold">
+                                You:
+                            </span>
+                          
+                        {% else %}
+                          
+                            <span class="font-semibold text-gray-700 dark:text-gray-200">
+                                {{ user.last_msg_sender }}:
+                            </span>
+                          
+                        {% endif %}
+                          
+                    {% endif %}
+                          
+                    {{ user.last_msg|truncatechars:20 }}
+                          
+                {% else %}
+                          
+                    <span class="text-gray-400">
+                        No messages yet
+                    </span>
+                  
+                {% endif %}
+                  
+            </span>
+
+        </div>
+
+    </div>
+
+    <!-- RIGHT SECTION -->
+    <div class="right-section flex flex-col items-end gap-1">
+
+        {% if user.unread_count > 0 and request.GET.chat != user.username %}
+        
+            <span class="unread-badge px-2 py-1 text-xs font-semibold bg-blue-500 text-white rounded-full">
+                {{ user.unread_count }}
+            </span>
+        
+        {% endif %}
+
+        <!-- Online Status -->
+        {% if user.profile.is_online %}
+        
+            <span class="text-green-500 text-sm">🟢</span>
+        
+        {% else %}
+        
+            <span class="text-gray-400 text-sm">⚪</span>
+        
+        {% endif %}
+
+    </div>
+
+</a>
+
+{% empty %}
+
+<ul>
+    <li>No users available</li>
+</ul>
+
+{% endfor %}

@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Security Settings{% endblock %}
+{% block content %}
+
+<div class="container mt-5">
+
+    <div class="mb-3">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition p-1">
+            🔙 Back
+        </a>
+    </div>
+    <div class="card mb-5 shadow-sm" style="max-width: 800px; margin: auto;">
+        <div class="card-body p-4">
+
+            <!-- Main Heading -->
+            <h3 class="mb-4 text-3xl underline text-dark">🔐 Your chats and calls are private</h3>
+            <p class="text-secondary ">
+                Your personal messages and calls are secured with end-to-end encryption. Not even the platform can read or listen to them. This includes your conversations, media, and status updates.
+            </p>
+
+            <hr>
+
+            <!-- Section: Text and Voice -->
+            <h5 class="mt-4 text-dark text-2xl">📝 Text and Voice Messages</h5>
+            <p class="text-muted">All your text and voice messages are end-to-end encrypted. Only you and the person you're chatting with can read or hear them.</p>
+
+            <!-- Section: Audio and Video -->
+            <h5 class="mt-4 text-dark text-2xl">🎙️ Audio and Video</h5>
+            <p class="text-muted">Calls you make — whether audio or video — are private and protected with end-to-end encryption.</p>
+
+            <!-- Section: Photos and Videos -->
+            <h5 class="mt-4 text-dark text-2xl">🖼️ Photos and Videos</h5>
+            <p class="text-muted">Photos and videos shared in your chats are encrypted and can't be accessed by third parties.</p>
+
+            <!-- Section: Documents -->
+            <h5 class="mt-4 text-dark text-2xl">📄 Documents</h5>
+            <p class="text-muted">Documents you send or receive in chats are also protected by encryption.</p>
+
+            <!-- Section: Location -->
+            <h5 class="mt-4 text-dark text-2xl">📍 Location</h5>
+            <p class="text-muted">When you share your location, it’s only visible to the people you choose. Real-time location sharing is end-to-end encrypted.</p>
+
+            <!-- Section: Status Updates -->
+            <h5 class="mt-4 text-dark text-2xl">📢 Status Updates</h5>
+            <p class="text-muted">Your status updates are shared with your selected contacts and protected with privacy controls.</p>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

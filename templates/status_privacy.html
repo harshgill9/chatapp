@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 w-full bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 space-y-6">
+    <h2 class="text-2xl font-semibold text-left text-gray-800 dark:text-white">Status - Privacy Settings</h2>
+    <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 text-left">Who can see my Status?</h4>
+
+    <form method="POST" id="statusPrivacyForm">
+        {% csrf_token %}
+        <div class="space-y-4 mt-6">
+            <label class="flex items-center gap-3 text-gray-700 dark:text-gray-200">
+                <input type="radio" name="status_privacy" value="everyone"
+                    {% if profile.status_privacy == 'everyone' %}checked{% endif %}
+                    class="form-radio text-blue-600 focus:ring-blue-500">
+                <span>Everyone</span>
+            </label>
+
+            <label class="flex items-center gap-3 text-gray-700 dark:text-gray-200">
+                <input type="radio" name="status_privacy" value="my_contacts"
+                    {% if profile.status_privacy == 'my_contacts' %}checked{% endif %}
+                    class="form-radio text-blue-600 focus:ring-blue-500">
+                <span>My Contacts</span>
+            </label>
+
+            <label class="flex items-center gap-3 text-gray-700 dark:text-gray-200">
+                <input type="radio" name="status_privacy" value="my_contacts_except"
+                    {% if profile.status_privacy == 'my_contacts_except' %}checked{% endif %}
+                    class="form-radio text-blue-600 focus:ring-blue-500">
+                <span>My Contacts Except</span>
+            </label>
+
+            <label class="flex items-center gap-3 text-gray-700 dark:text-gray-200">
+                <input type="radio" name="status_privacy" value="nobody"
+                    {% if profile.status_privacy == 'nobody' %}checked{% endif %}
+                    class="form-radio text-blue-600 focus:ring-blue-500">
+                <span>Nobody</span>
+            </label>
+        </div>
+    </form>
+
+    <div id="status-message" class="text-center text-green-600 dark:text-green-400 font-medium mt-4"></div>
+</div>
+
+<script>
+    document.querySelectorAll('input[name="status_privacy"]').forEach(radio => {
+        radio.addEventListener('change', function () {
+            const csrfToken = '{{ csrf_token }}';
+            const formData = new URLSearchParams();
+            formData.append('status_privacy', this.value);
+
+            fetch("{% url 'status_privacy' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: formData.toString()
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('status-message').innerText = "✅ Status privacy updated!";
+                } else {
+                    document.getElementById('status-message').innerText = "❌ Failed to save.";
+                }
+            })
+            .catch(error => {
+                document.getElementById('status-message').innerText = "❌ Something went wrong.";
+            });
+        });
+    });
+</script>
+
+{% endblock %}

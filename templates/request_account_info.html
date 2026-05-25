@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Request Account Info{% endblock %}
+{% block content %}
+
+<div class="mb-3">
+    <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition p-1">
+        🔙 Back
+    </a>
+</div>
+<div class="container mt-5 max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-5 space-y-6">
+    <!-- Heading -->
+    <h2 class="text-2xl font-bold text-gray-800 dark:text-white">📄 Request Account Info</h2>
+    <p class="text-gray-600 dark:text-gray-300">
+        You can request a copy of your account and activity information. Reports will be generated and made available for download within 3 days.
+    </p>
+
+    <!-- Request Account Report Section -->
+    <hr class="border-gray-300 dark:border-gray-700">
+
+    <div>
+        <form method="post" action="{% url 'generate_account_report' %}">
+            {% csrf_token %}
+            <p class="text-sm">Account Information Report</p>
+
+            <hr class="my-3 border-gray-300 dark:border-gray-700">
+
+            <button type="submit" class="btn btn-primary w-full md:w-auto">
+                📥 Request Send
+            </button>
+
+            <hr class="mt-3 border-gray-300 dark:border-gray-700">
+        </form>
+    </div>
+
+    <div>
+        <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Channel Activity</h3>
+        <hr class="my-3 border-gray-300 dark:border-gray-700">
+
+        <form method="post" action="{% url 'generate_channel_report' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-secondary w-full md:w-auto">
+                📊 Request Channel Report
+            </button>
+        </form>
+
+        <hr class="mt-3 border-gray-300 dark:border-gray-700">
+    </div>
+
+</div>
+{% endblock %}

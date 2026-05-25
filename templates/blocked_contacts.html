@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}🚷 Blocked Contacts{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
+    <h2 class="text-xl font-semibold mb-4">🚷 Blocked Contacts</h2>
+    <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">Manage your blocked users list</p>
+
+    {% if blocked_users %}
+        <ul class="space-y-4">
+            {% for user in blocked_users %}
+                <li id="blocked-{{ user.username}}" class="flex justify-between items-center border p-3 rounded-md dark:border-gray-700 blocked-user-card">
+                    <span>{{ user.username }}</span>
+                    <button
+                        onclick="unblockUser('{{ user.username }}', this)"
+                        class="text-red-600 hover:text-red-800 font-medium text-sm"
+                    >
+                        Unblock
+                    </button>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="text-gray-500">You haven’t blocked anyone yet.</p>
+    {% endif %}
+</div>
+
+<script>
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === name + "=") {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+async function unblockUser(username, button) {
+  try {
+    const response = await fetch("/privacy/toggle-block/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCookie("csrftoken"),
+      },
+      body: JSON.stringify({
+        username: username,
+        action: "unblock",
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.status === "unblocked") {
+      const card = button.closest("li");
+      if (card) card.remove();
+      alert(`${username} has been unblocked ✅`);
+    } else {
+      alert("Failed to unblock user ❌");
+    }
+  } catch (error) {
+    console.error("Unblock error:", error);
+    alert("Something went wrong while unblocking.");
+  }
+}
+</script>
+{% endblock %}

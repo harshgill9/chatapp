@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+{% block title %}Privacy Settings{% endblock %}
+{% block content %}
+
+<div class="mb-3">
+    <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition p-1">
+        🔙 Back
+    </a>
+</div>
+<div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6 space-y-6">
+
+    <h2 class="text-2xl font-bold text-gray-800 dark:text-white">🔒 Privacy Settings</h2>
+    <p class="text-gray-600 dark:text-gray-300">Control who can see your info and how others interact with you.</p>
+
+    <ul class="space-y-4">
+        {% comment "Each setting option" %}
+        {% for item in settings %}
+        {% endcomment %}
+        
+        <li>
+            <a href="{% url 'last_seen_online' %}" class="flex items-center justify-between p-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <div>
+                    <p class="text-lg font-medium">🕒 Last Seen & Online</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Control who can see your last seen and online status</p>
+                </div>
+                <i class="fas fa-chevron-right text-gray-400"></i>
+            </a>
+        </li>
+
+        <li>
+            <a href="{% url 'profile_photo_privacy' %}" class="flex items-center justify-between p-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <div>
+                    <p class="text-lg font-medium">🖼️ Profile Photo</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Choose who can see your photo</p>
+                </div>
+                <i class="fas fa-chevron-right text-gray-400"></i>
+            </a>
+        </li>
+
+        <li>
+            <a href="{% url 'about_privacy' %}" class="flex items-center justify-between p-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <div>
+                    <p class="text-lg font-medium">ℹ️ About</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Control who sees your about info</p>
+                </div>
+                <i class="fas fa-chevron-right text-gray-400"></i>
+            </a>
+        </li>
+
+        <li>
+            <a href="{% url 'status_privacy' %}" class="flex items-center justify-between p-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <div>
+                    <p class="text-lg font-medium">📶 Status</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Manage who sees your status updates</p>
+                </div>
+                <i class="fas fa-chevron-right text-gray-400"></i>
+            </a>
+        </li>
+
+        <li>
+             <a href="#" id="readReceiptsToggle" class="flex items-center justify-between p-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+        <div>
+            <p class="text-lg font-medium">✅ Read Receipts</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Turn read receipts on or off</p>
+        </div>
+        <i id="readReceiptsIcon" class="fas text-xl"></i>
+    </a>
+        </li>
+
+        <li>
+            <a href="{% url 'default_message_timer' %}" class="flex items-center justify-between p-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <div>
+                    <p class="text-lg font-medium">⏱️ Default Message Timer</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Set a default timer for disappearing messages</p>
+                </div>
+                <i class="fas fa-chevron-right text-gray-400"></i>
+            </a>
+        </li>
+
+        <li>
+            <a href="#" id="blockUnknownsToggle" class="flex items-center justify-between p-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <div>
+                    <p class="text-lg font-medium">🚫 Block Unknown Accounts</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">To protect your account and improve device performance, ShopMate blocks unknown accounts from messaging you.</p>
+                </div>
+                <i id="blockUnknownsIcon" class="fas text-xl"></i>
+            </a>
+        </li>
+
+        <li>
+            <a href="{% url 'group_privacy' %}" class="flex items-center justify-between p-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <div>
+                    <p class="text-lg font-medium">👥 Groups</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Control who can add you to groups</p>
+                </div>
+                <i class="fas fa-chevron-right text-gray-400"></i>
+            </a>
+        </li>
+
+        <li>
+            <a href="{% url 'blocked_contacts' %}" class="flex items-center justify-between p-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <div>
+                    <p class="text-lg font-medium">🚷 Blocked Contacts</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Manage your blocked users list</p>
+                </div>
+                <i class="fas fa-chevron-right text-gray-400"></i>
+            </a>
+        </li>
+
+        <li>
+            <a href="#" id="appLockToggle" class="flex items-center justify-between p-4 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <div>
+                    <p class="text-lg font-medium">🔒 App Lock</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Enable fingerprint or passcode lock</p>
+                </div>
+                <i id="appLockIcon" class="fas fa-toggle-off text-gray-400 text-xl ml-2"></i>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const icon = document.getElementById('readReceiptsIcon');
+        const toggle = document.getElementById('readReceiptsToggle');
+
+        const isEnabled = "{{ profile.read_receipts_enabled|yesno:'true,false' }}" === "true";
+        
+        // Function to update icon based on status
+        function updateIcon(enabled) {
+            if (enabled) {
+                icon.className = 'fas fa-toggle-on text-green-500 text-xl';
+            } else {
+                icon.className = 'fas fa-toggle-off text-gray-400 text-xl';
+            }
+        }
+
+        // Set initial icon
+        updateIcon(isEnabled);
+
+        toggle.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            fetch("{% url 'toggle_read_receipts' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    updateIcon(data.enabled);
+                } else {
+                    alert('Failed to update read receipts.');
+                }
+            })
+            .catch(() => alert('Error updating read receipts.'));
+        });
+
+        const blockIcon = document.getElementById('blockUnknownsIcon');
+        const blockToggle = document.getElementById('blockUnknownsToggle');
+
+        const isBlocked = "{{ profile.block_unknowns|yesno:'true,false' }}" === "true";
+
+        function updateBlockIcon(enabled) {
+            if (enabled) {
+                blockIcon.className = 'fas fa-toggle-on text-red-500 text-xl';
+            } else {
+                blockIcon.className = 'fas fa-toggle-off text-gray-400 text-xl';
+            }
+        }
+
+        updateBlockIcon(isBlocked);
+
+        blockToggle.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            fetch("{% url 'toggle_block_unknowns' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    updateBlockIcon(data.enabled);
+                    if (!data.enabled) {  // yahan false ka matlab: block off (unblocked)
+                        const msgInput = window.opener?.document.getElementById('message-input');
+                        if (msgInput) {
+                            msgInput.disabled = false;
+                            msgInput.placeholder = 'Type a message...';
+                        }
+                    }
+                    
+                } else {
+                    alert('Failed to update setting.');
+                }
+            })
+            .catch(() => alert('Error updating setting.'));
+        });
+    });
+
+    const appLockIcon = document.getElementById('appLockIcon');
+    const appLockToggle = document.getElementById('appLockToggle');
+    
+    const isAppLockEnabled = "{{ profile.app_lock_enabled|yesno:'true,false' }}" === "true";
+    
+    function updateAppLockIcon(enabled) {
+        if (enabled) {
+            appLockIcon.className = 'fas fa-toggle-on text-blue-500 text-xl';
+        } else {
+            appLockIcon.className = 'fas fa-toggle-off text-gray-400 text-xl';
+        }
+    }
+    
+    updateAppLockIcon(isAppLockEnabled);
+    
+    appLockToggle.addEventListener('click', function (e) {
+        e.preventDefault();
+    
+        fetch("{% url 'toggle_app_lock' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({})
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                updateAppLockIcon(data.enabled);
+            } else {
+                alert('Failed to update App Lock setting.');
+            }
+        })
+        .catch(() => alert('Error updating App Lock setting.'));
+    });
+    
+</script>
+
+
+{% endblock %}

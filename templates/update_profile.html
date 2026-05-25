@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="p-6 max-w-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md">
+  <form action="{% url 'update_profile' %}" method="post" enctype="multipart/form-data" class="space-y-6">
+    {% csrf_token %}
+    <div class="flex flex-col items-center space-y-4 text-center">
+
+      {% if request.user.userprofile.profile_pic %}
+        <img id="preview-image" src="{{ request.user.userprofile.profile_pic.url }}" alt="Profile Picture" class="w-24 h-24 rounded-full object-cover shadow mx-auto">
+      {% else %}
+        <div id="preview-placeholder" class="w-24 h-24 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 text-2xl font-bold mx-auto">
+          No Profile Pic
+        </div>
+      {% endif %}
+
+      <label for="profile_pic" class="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold cursor-pointer">
+        ✏️ Change Profile Picture
+      </label>
+      <input type="file" id="profile_pic" name="profile_pic" accept="image/*" class="hidden" onchange="handleFileChange(this)" />
+
+      <div id="save-btn-container" class="hidden">
+        <button
+          type="submit"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded font-semibold transition"
+        >
+          💾 Save Changes
+        </button>
+      </div>
+
+    </div>
+  </form>
+</div>
+
+<!-- ✅ Move script INSIDE the block, before endblock -->
+<script>
+  function handleFileChange(input) {
+    const file = input.files[0];
+    const previewImage = document.getElementById('preview-image');
+    const placeholder = document.getElementById('preview-placeholder');
+    const saveBtn = document.getElementById('save-btn-container');
+
+    if (file) {
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        if (previewImage) {
+          previewImage.src = e.target.result;
+        } else {
+          const img = document.createElement('img');
+          img.id = "preview-image";
+          img.src = e.target.result;
+          img.alt = "Preview";
+          img.className = "w-24 h-24 rounded-full object-cover shadow mx-auto";
+          placeholder.replaceWith(img);
+        }
+
+        saveBtn.classList.remove('hidden');
+      };
+
+      reader.readAsDataURL(file);
+    }
+  }
+</script>
+{% endblock %}

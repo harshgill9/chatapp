@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Last Seen & Online{% endblock %}
+{% block content %}
+
+<!-- Back Button -->
+<div class="mb-3">
+    <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition p-1">
+        🔙 Back
+    </a>
+</div>
+<!-- Fixed Centered Settings Card -->
+<div class="mx-auto max-w-3xl w-full bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 space-y-6 ">
+
+    <!-- Header -->
+    <h2 class="text-2xl font-bold text-gray-800 dark:text-white">🕒 Last Seen & Online</h2>
+    <p class="text-gray-600 dark:text-gray-300">
+        Control who can see your last seen and online status. People you don’t share this with won’t see it for you either.
+    </p>
+
+    <!-- Last Seen Settings -->
+    <div>
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2 sticky top-0 bg-white dark:bg-gray-800 z-10">
+            Who can see my last seen
+        </h3>
+        <div class="space-y-2">
+            <label class="block">
+                <input type="radio" name="last_seen" value="everyone"
+                       class="mr-2"
+                       {% if selected_last_seen == "everyone" %}checked{% endif %}
+                       onchange="submitPrivacySetting(this)">
+                Everyone
+            </label>
+            <label class="block">
+                <input type="radio" name="last_seen" value="my_contacts"
+                       class="mr-2"
+                       {% if selected_last_seen == "my_contacts" %}checked{% endif %}
+                       onchange="submitPrivacySetting(this)">
+                My contacts
+            </label>
+            <label class="block">
+                <input type="radio" name="last_seen" value="my_contacts_except"
+                       class="mr-2"
+                       {% if selected_last_seen == "my_contacts_except" %}checked{% endif %}
+                       onchange="submitPrivacySetting(this)">
+                My contacts except...
+            </label>
+            <label class="block">
+                <input type="radio" name="last_seen" value="nobody"
+                       class="mr-2"
+                       {% if selected_last_seen == "nobody" %}checked{% endif %}
+                       onchange="submitPrivacySetting(this)">
+                Nobody
+            </label>
+        </div>
+
+        <hr class="my-6 border-gray-300 dark:border-gray-600">
+
+        <!-- Online Status Settings -->
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2 sticky top-0 bg-white dark:bg-gray-800 z-10">
+            Who can see when I’m online
+        </h3>
+        <div class="space-y-2">
+            <label class="block">
+                <input type="radio" name="online_status" value="everyone"
+                       class="mr-2"
+                       {% if selected_online_status == "everyone" %}checked{% endif %}
+                       onchange="submitPrivacySetting(this)">
+                Everyone
+            </label>
+            <label class="block">
+                <input type="radio" name="online_status" value="same_as_last_seen"
+                       class="mr-2"
+                       {% if selected_online_status == "same_as_last_seen" %}checked{% endif %}
+                       onchange="submitPrivacySetting(this)">
+                Same as last seen
+            </label>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript to auto-save radio buttons -->
+<script>
+    function submitPrivacySetting(input) {
+        const formData = new FormData();
+        formData.append(input.name, input.value);
+
+        fetch("{% url 'save_last_seen_online' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+            },
+            body: formData,
+        })
+        .then(response => {
+            if (!response.ok) {
+                alert("Failed to save. Try again.");
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("Something went wrong.");
+        });
+    }
+</script>
+
+{% endblock %}

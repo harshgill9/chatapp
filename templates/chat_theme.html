@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+{% block title %}Chat Theme Settings{% endblock %}
+{% block content %}
+<div class="p-4 space-y-6 max-w-lg mx-auto">
+  <h2 class="text-xl font-semibold mb-4">🎨 Chat Theme Settings</h2>
+
+  <!-- 🌄 Chat Wallpaper -->
+  <div>
+    <h3 class="font-medium mb-2">Chat Wallpaper</h3>
+    <select id="chatWallpaperSelect" name="chat_wallpaper_default" class="w-full p-2 rounded border dark:bg-gray-800 dark:text-white">
+        <option value="default" {% if profile.chat_wallpaper_default == 'default' %}selected{% endif %}>Default</option>
+        <option value="light" {% if profile.chat_wallpaper_default == 'light' %}selected{% endif %}>Light</option>
+        <option value="dark" {% if profile.chat_wallpaper_default == 'dark' %}selected{% endif %}>Dark</option>
+        <option value="gradient" {% if profile.chat_wallpaper_default == 'gradient' %}selected{% endif %}>Gradient</option>
+        <option value="color" {% if profile.chat_wallpaper_default == 'color' %}selected{% endif %}>Color</option>
+    </select>
+
+    <!-- 🎨 Color Theme Circles -->
+    <div id="colorThemeContainer" class="hidden mt-3">
+      <label class="block text-sm mb-1">Select Chat Color Theme:</label>
+      <div id="colorPalette" class="flex gap-3">
+        <div class="color-circle" data-color="blue" style="background-color:#3b82f6"></div>
+        <div class="color-circle" data-color="green" style="background-color:#22c55e"></div>
+        <div class="color-circle" data-color="purple" style="background-color:#8b5cf6"></div>
+        <div class="color-circle" data-color="red" style="background-color:#ef4444"></div>
+        <div class="color-circle" data-color="orange" style="background-color:#f97316"></div>
+        <div class="color-circle" data-color="pink" style="background-color:#ec4899"></div>
+
+      </div>
+      <input type="hidden" id="colorThemeSelect" name="chat_color_theme" value="blue">
+    </div>
+
+    <!-- Custom wallpaper upload -->
+    <label class="block mt-3 text-sm">Upload Custom Wallpaper:</label>
+    <input type="file" id="chatWallpaperUpload" name="chat_wallpaper" accept="image/*" class="w-full mt-1 border rounded p-2" >
+      
+    {% if profile.chat_wallpaper %}
+        <img src="{{ profile.chat_wallpaper.url }}" alt="Current Wallpaper"
+             style="max-width: 100px; max-height: 100px; margin-top: 10px;">
+        <button id="removeWallpaper"
+                class="bg-red-500 text-white px-3 py-1 rounded mt-2 hover:bg-red-600 transition">
+            🗑 Remove Wallpaper
+        </button>
+    {% endif %}
+  </div>
+
+  <!-- 📸 Media Upload Quality -->
+  <div>
+    <h3 class="font-medium mb-2">Media Upload Quality</h3>
+    <select id="mediaUploadQuality" name="media_upload_quality" class="w-full p-2 rounded border dark:bg-gray-800 dark:text-white">          
+        <option value="standard" {% if profile.media_upload_quality == 'standard' %}selected{% endif %}>Standard</option>
+        <option value="high" {% if profile.media_upload_quality == 'high' %}selected{% endif %}>High</option>
+    </select>
+  </div>
+
+  <!-- 📥 Auto Download Options -->
+  <div>
+    <h3 class="font-medium mb-2">Media Auto-Download</h3>
+    <label class="block"><input type="checkbox" id="autoPhotos" name="auto_download_photos" {% if profile.auto_download_photos %}checked{% endif %}> Photos</label>
+    <label class="block"><input type="checkbox" id="autoVideos" name="auto_download_videos" {% if profile.auto_download_videos %}checked{% endif %}> Videos</label>
+    <label class="block"><input type="checkbox" id="autoAudio" name="auto_download_audio" {% if profile.auto_download_audio %}checked{% endif %}> Audio </label>
+    <label class="block"><input type="checkbox" id="autoDocs" name="auto_download_documents" {% if profile.auto_download_documents %}checked{% endif %}> Documents</label>
+  </div>
+
+  <!-- 💾 Save Button -->
+  <button id="saveChatTheme" 
+          class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mt-3 w-full transition">
+    💾 Save Changes
+  </button>
+</div>
+
+<!-- CSS for color circles -->
+<style>
+  .color-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.2s, border 0.2s, box-shadow 0.2s;
+  }
+  .color-circle:hover {
+    transform: scale(1.2);
+  }
+  .color-circle.active {
+    border: 3px solid black !important; 
+    box-shadow: 0 0 8px 2px rgba(0,0,0,0.6) !important;
+  }
+</style>
+
+<script>
+  // Show color circles when 'Color' is selected
+  const wallpaperSelectEl = document.getElementById("chatWallpaperSelect");
+  const colorThemeContainer = document.getElementById("colorThemeContainer");
+  wallpaperSelectEl.addEventListener("change", () => {
+    if (wallpaperSelectEl.value === "color") {
+      colorThemeContainer.classList.remove("hidden");
+    } else {
+      colorThemeContainer.classList.add("hidden");
+    }
+  });
+
+  // Color circle selection
+  const circles = document.querySelectorAll("#colorPalette .color-circle");
+  const hiddenInput = document.getElementById("colorThemeSelect");
+
+  circles.forEach(circle => {
+    circle.addEventListener("click", () => {
+      circles.forEach(c => c.classList.remove("active"));
+      circle.classList.add("active");
+      hiddenInput.value = circle.dataset.color;
+    });
+  });
+
+  // Load saved color from localStorage
+  const savedColor = localStorage.getItem("chatColorTheme");
+  if (savedColor) {
+    const activeCircle = Array.from(circles).find(c => c.dataset.color === savedColor);
+    if (activeCircle) activeCircle.classList.add("active");
+    hiddenInput.value = savedColor;
+  } else {
+    circles[0].classList.add("active");
+  }
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + "=")) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  document.getElementById("saveChatTheme").addEventListener("click", async () => {
+    const formData = new FormData();
+    const wallpaperFile = document.getElementById("chatWallpaperUpload").files[0];
+    const wallpaperSelect = document.getElementById("chatWallpaperSelect").value;
+
+    if (wallpaperFile) {
+      formData.append("chat_wallpaper", wallpaperFile);
+    } else {
+      formData.append("chat_wallpaper_default", wallpaperSelect);
+      if (wallpaperSelect === "color") {
+        formData.append("chat_color_theme", hiddenInput.value);
+      }
+    }
+
+    formData.append("media_upload_quality", document.getElementById("mediaUploadQuality").value);
+    formData.append("auto_download_photos", document.getElementById("autoPhotos").checked ? "true" : "false");
+    formData.append("auto_download_videos", document.getElementById("autoVideos").checked ? "true" : "false");
+    formData.append("auto_download_audio", document.getElementById("autoAudio").checked ? "true" : "false");
+    formData.append("auto_download_documents", document.getElementById("autoDocs").checked ? "true" : "false");
+
+    try {
+      const response = await fetch("/update-chat-theme/", {
+        method: "POST",
+        headers: { "X-CSRFToken": getCookie("csrftoken") },
+        body: formData
+      });
+
+      const data = await response.json();
+      if (data.status === "success") {
+        alert("✅ Chat theme updated successfully!");
+        localStorage.setItem("chatWallpaperDefault", wallpaperSelect);
+        if (wallpaperSelect === "color") {
+          localStorage.setItem("chatColorTheme", hiddenInput.value);
+        }
+        if (wallpaperFile) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            localStorage.setItem("chatWallpaperCustom", e.target.result);
+            window.location.reload();
+          };
+          reader.readAsDataURL(wallpaperFile);
+        } else {
+          window.location.reload();
+        }
+      } else {
+        alert("❌ Failed to update theme. Please try again.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("⚠️ Something went wrong.");
+    }
+  });
+
+  // Remove wallpaper
+  const removeBtn = document.getElementById("removeWallpaper");
+  if (removeBtn) {
+    removeBtn.addEventListener("click", async () => {
+      if (confirm("Remove current wallpaper?")) {
+        try {
+          const response = await fetch("/remove-chat-wallpaper/", {
+            method: "POST",
+            headers: { "X-CSRFToken": getCookie("csrftoken") },
+          });
+          const data = await response.json();
+          if (data.status === "success") {
+            localStorage.removeItem("chatWallpaperCustom");
+            localStorage.removeItem("chatWallpaperDefault");
+            localStorage.removeItem("chatColorTheme");
+            alert("✅ Wallpaper removed successfully!");
+            window.location.reload();
+          } else {
+            alert("❌ Failed to remove wallpaper.");
+          }
+        } catch (err) {
+          console.error(err);
+          alert("⚠️ Error removing wallpaper.");
+        }
+      }
+    });
+  }
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const circles = document.querySelectorAll("#colorPalette .color-circle");
+  const hiddenInput = document.getElementById("colorThemeSelect");
+
+  // function to activate a circle
+  function activateCircle(color) {
+    circles.forEach(c => c.classList.remove("active"));
+    const circle = Array.from(circles).find(c => c.dataset.color === color);
+    if (circle) circle.classList.add("active");
+    hiddenInput.value = color;
+  }
+
+  // load saved color from localStorage
+  const savedColor = localStorage.getItem("chatColorTheme");
+  if (savedColor) {
+    activateCircle(savedColor);
+  } else {
+    activateCircle(circles[0].dataset.color); // default first color
+  }
+
+  // click event for each circle
+  circles.forEach(circle => {
+    circle.addEventListener("click", () => {
+      activateCircle(circle.dataset.color);
+    });
+  });
+
+  // optional: save selected color to localStorage immediately on click
+  circles.forEach(circle => {
+    circle.addEventListener("click", () => {
+      localStorage.setItem("chatColorTheme", circle.dataset.color);
+    });
+  });
+});
+</script>
+{% endblock %}

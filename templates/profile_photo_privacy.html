@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Profile Photo Privacy{% endblock %}
+{% block content %}
+
+<div class="max-w-xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-10 min-h-[50vh]">
+    <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-6">🖼️ Profile Photo Privacy</h2>
+
+    <form method="post" id="privacy-form">
+        {% csrf_token %}
+
+        <div class="space-y-6 text-lg">
+            <label class="flex items-center space-x-4 cursor-pointer">
+                <input type="radio" name="photo_privacy" value="everyone" class="form-radio h-5 w-5 text-blue-600" {% if current_setting == 'everyone' %}checked{% endif %}>
+                <span class="text-gray-700 dark:text-gray-300">Everyone</span>
+            </label>
+
+            <label class="flex items-center space-x-4 cursor-pointer">
+                <input type="radio" name="photo_privacy" value="my_contacts" class="form-radio h-5 w-5 text-blue-600" {% if current_setting == 'my_contacts' %}checked{% endif %}>
+                <span class="text-gray-700 dark:text-gray-300">My Contacts</span>
+            </label>
+
+            <label class="flex items-center space-x-4 cursor-pointer">
+                <input type="radio" name="photo_privacy" value="my_contacts_except" class="form-radio h-5 w-5 text-blue-600" {% if current_setting == 'my_contacts_except' %}checked{% endif %}>
+                <span class="text-gray-700 dark:text-gray-300">My Contacts Except...</span>
+            </label>
+
+            <label class="flex items-center space-x-4 cursor-pointer">
+                <input type="radio" name="photo_privacy" value="nobody" class="form-radio h-5 w-5 text-blue-600" {% if current_setting == 'nobody' %}checked{% endif %}>
+                <span class="text-gray-700 dark:text-gray-300">Nobody</span>
+            </label>
+        </div>
+    </form>
+</div>
+
+<!-- 🧠 Auto-submit on radio change -->
+<script>
+    document.querySelectorAll('input[name="photo_privacy"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            document.getElementById('privacy-form').submit();
+        });
+    });
+</script>
+
+{% endblock %}

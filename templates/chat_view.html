@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="chat-container">
+    {% if selected_user %}
+        <h2>Chat with {{ selected_user.username }}</h2>
+
+        {% if is_blocked %}
+            <div class="alert alert-warning">
+                ⚠️ You have blocked this user. You cannot send or receive messages.
+            </div>
+        {% else %}
+
+            {% if room and request.user in room.members.all %}
+                <!-- ✅ User is a member: show messages -->
+                <div class="chat-messages">
+                    {% for message in messages %}
+                        <p><strong>{{ message.sender.username }}:</strong> {{ message.content }}</p>
+                    {% empty %}
+                        <p>No messages yet.</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Message input -->
+                <form method="POST" action="{% url 'send_message' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="receiver" value="{{ selected_user.username }}">
+                    <div class="form-group mt-2">
+                        <textarea name="message" class="form-control" rows="2" placeholder="Type your message..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-2">Send</button>
+                </form>
+
+            {% else %}
+                <!-- 🚫 Not a member -->
+                <div class="alert alert-info mt-4 text-center">
+                    You are not a member of this group.<br>
+                    Please send a join request to chat.
+                </div>
+            {% endif %}
+
+        {% endif %}
+    
+    {% else %}
+        <div class="alert alert-info">
+            No user selected. Please choose a user to start chatting.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

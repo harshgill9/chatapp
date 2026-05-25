@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
+    <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-white">⏱️ Default Message Timer</h2>
+    
+    <form method="POST" id="timerForm" class="space-y-4">
+        {% csrf_token %}
+        
+        <div class="space-y-3">
+            <label class="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                <input type="radio" name="default_message_timer" value="0"
+                    {% if profile.default_message_timer == 0 %}checked{% endif %}
+                    class="form-radio text-blue-600">
+                <span>Off</span>
+            </label>
+
+            <label class="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                <input type="radio" name="default_message_timer" value="1"
+                    {% if profile.default_message_timer == 1 %}checked{% endif %}
+                    class="form-radio text-blue-600">
+                <span>1 minute</span>
+            </label>
+
+            <label class="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                <input type="radio" name="default_message_timer" value="5"
+                    {% if profile.default_message_timer == 5 %}checked{% endif %}
+                    class="form-radio text-blue-600">
+                <span>5 minutes</span>
+            </label>
+
+            <label class="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                <input type="radio" name="default_message_timer" value="10"
+                    {% if profile.default_message_timer == 10 %}checked{% endif %}
+                    class="form-radio text-blue-600">
+                <span>10 minutes</span>
+            </label>
+
+            <label class="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                <input type="radio" name="default_message_timer" value="60"
+                    {% if profile.default_message_timer == 60 %}checked{% endif %}
+                    class="form-radio text-blue-600">
+                <span>1 hour</span>
+            </label>
+
+            <label class="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                <input type="radio" name="default_message_timer" value="1440"
+                    {% if profile.default_message_timer == 1440 %}checked{% endif %}
+                    class="form-radio text-blue-600">
+                <span>1 day</span>
+            </label>
+        </div>
+    </form>
+
+    <div id="status-message" class="text-sm font-medium mt-3 text-green-600 dark:text-green-400"></div>
+</div>
+
+<script>
+    // Auto-submit via AJAX when radio button is changed
+    document.querySelectorAll('input[name="default_message_timer"]').forEach(radio => {
+        radio.addEventListener('change', function () {
+            const csrfToken = '{{ csrf_token }}';
+            const formData = new URLSearchParams();
+            formData.append('default_message_timer', this.value);
+
+            fetch("{% url 'default_message_timer' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: formData.toString()
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('status-message').innerText = "✅ Timer updated!";
+                } else {
+                    document.getElementById('status-message').innerText = "❌ Failed to update timer.";
+                }
+            })
+            .catch(() => {
+                document.getElementById('status-message').innerText = "❌ Something went wrong.";
+            });
+        });
+    });
+</script>
+
+{% endblock %}

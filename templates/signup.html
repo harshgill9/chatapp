@@ -1,62 +1,104 @@
-{% extends 'base.html' %} {% block content %}
-<div class="flex justify-center items-center min-h-[78vh] bg-gray-50">
-  <div class="w-full max-w-md bg-white rounded-lg shadow-md p-8 border border-gray-200">
-    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">📝 Create Your Account</h2>
+{% extends 'base.html' %}
+{% load static %}
 
-    <form method="post" class="space-y-4">
-      {% csrf_token %} {% if messages %}
-      <div class="max-w-xl mx-auto my-4 space-y-2">
-        {% for message in messages %}
-        <div class="px-4 py-2 rounded {{ message.tags }} bg-red-100 text-red-800">{{ message }}</div>
-        {% endfor %}
+{% block content_wrapper %}
+<div class="relative min-h-screen w-full overflow-hidden bg-cover bg-center bg-no-repeat"
+     style="background-image: url('{% static 'img/Sign-up-bg-img.jpg' %}');">
+
+  <!-- Blur Overlay -->
+  <div class="absolute inset-0 backdrop-blur-sm bg-black/40"></div>
+
+  <!-- Signup Box -->
+  <div class="relative z-10 flex justify-center items-center h-screen px-4">
+    <div class="w-full max-w-md bg-white/90 dark:bg-gray-900/90 rounded-lg shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+      <h2 class="text-2xl font-bold text-center text-gray-800 dark:text-white mb-6">📝 Create Your Account</h2>
+
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        {% if messages %}
+          <div class="space-y-2">
+            {% for message in messages %}
+              <div class="px-4 py-2 rounded {{ message.tags }} bg-red-100 text-red-800">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Name</label>
+          <input
+            type="text"
+            name="name"
+            placeholder="👤 Enter your full name"
+            required
+            minlength="3"
+            class="mt-1 w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Username</label>
+          <input
+            type="text"
+            name="username"
+            placeholder="📛 Choose a username"
+            required
+            minlength="3"
+            pattern="^[a-zA-Z0-9_]+$"
+            title="Only letters, numbers, and underscores are allowed"
+            class="mt-1 w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+          />
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Phone Number</label>   
+          <input
+              type="text"
+              name="phone"
+              placeholder="📱 Enter your phone number"
+              pattern="^\d{10}$"
+              title="Please enter a valid 10-digit phone number"
+              class="mt-1 w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+              required
+          />
       </div>
-      {% endif %}
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Name</label>
-        <input
-          type="text"
-          name="name"
-          placeholder="Enter your Name"
-          required
-          class="mt-1 w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Password</label>
+          <input
+            type="password"
+            name="password"
+            placeholder="🔒 Create a password"
+            required
+            minlength="8"
+            class="mt-1 w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+          />
+        </div>
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Username</label>
-        <input
-          type="text"
-          name="username"
-          placeholder="Create a username"
-          required
-          class="mt-1 w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Confirm Password</label>
+          <input
+            type="password"
+            name="confirm_password"
+            placeholder="🔒 Confirm your password"
+            required
+            minlength="8"
+            class="mt-1 w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+          />
+        </div>
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Password</label>
-        <input
-          type="password"
-          name="password"
-          placeholder="Create a password"
-          required
-          class="mt-1 w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+        <button
+          type="submit"
+          class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition duration-200"
+        >
+          ➕ Sign Up
+        </button>
+      </form>
 
-      <button
-        type="submit"
-        class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition duration-200"
-      >
-        ➕ Sign Up
-      </button>
-    </form>
-
-    <p class="text-sm text-center text-gray-600 mt-4">
-      Already have an account?
-      <a href="{% url 'login' %}" class="text-blue-600 hover:underline">Login here</a>
-    </p>
+      <p class="text-sm text-center text-gray-600 dark:text-gray-300 mt-4">
+        Already have an account?
+        <a href="{% url 'login' %}" class="text-blue-600 hover:underline">Login here</a>
+      </p>
+    </div>
   </div>
 </div>
 {% endblock %}

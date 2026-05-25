@@ -1,26 +1,102 @@
-templates/search.html
-{% extends 'base.html' %} {% block content %}
-<h2>Search Users</h2>
+{% extends "base.html" %}
 
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Search</button>
-</form>
+{% block content %}
+<div class="max-w-2xl mx-auto mt-6 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
 
-{% if users %}
-  <h3>Results:</h3>
-  <ul>
-    {% for user in users %}
-      <li>
-        {{ user.username }} - 
-        {% if user.is_online %}
-          🟢 Online
-        {% else %}
-          ⚪ Offline
-        {% endif %}
-      </li>
-    {% endfor %}
-  </ul>
-{% endif %}
+  <h2 class="text-2xl font-semibold mb-4 text-indigo-600">
+    🔍 Search
+  </h2>
+
+  <form method="get" action="{% url 'search' %}" class="flex gap-2 mb-6">
+    
+    <input
+      type="text"
+      name="q"
+      placeholder="Search users or groups..."
+      value="{{ query }}"
+      class="flex-1 px-3 py-2 border rounded text-black focus:outline-indigo-500"
+    />
+
+    <button
+      type="submit"
+      class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition"
+    >
+      Search
+    </button>
+
+  </form>
+
+  {% if query %}
+  <p>Users count: {{ users|length }}</p>
+  <p>Rooms count: {{ rooms|length }}</p>
+
+    <div>
+
+      <!-- USERS -->
+      {% if users %}
+
+        <h3 class="text-lg font-semibold mb-2 text-gray-700 dark:text-gray-300">
+          Users
+        </h3>
+
+        <ul class="space-y-2 mb-6">
+
+          {% for user in users %}
+            <li>
+
+              <a href="/?chat={{ user.username }}"
+                 class="block px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded hover:bg-indigo-100 dark:hover:bg-indigo-800">
+
+                {{ user.username }}
+
+                {% if user.profile.is_online %}
+                  <span class="text-green-500 text-sm">
+                    🟢 Online
+                  </span>
+                {% else %}
+                  <span class="text-gray-400 text-sm">
+                    ⚪ Offline
+                  </span>
+                {% endif %}
+
+              </a>
+
+            </li>
+          {% endfor %}
+
+        </ul>
+
+      {% else %}
+
+        <p class="text-gray-500 mb-6">
+          No users found.
+        </p>
+
+      {% endif %}
+
+
+      <!-- ROOMS -->
+      {% if rooms %}
+
+      {% if rooms %}
+        <h3 class="text-lg font-semibold mb-2 text-gray-700 dark:text-gray-300">
+          Rooms
+        </h3>
+      
+        <ul class="space-y-2">
+          {% for room in rooms %}
+            <li>
+              <a href="/?room={{ room.slug }}"
+                class="block px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded hover:bg-indigo-100 dark:hover:bg-indigo-800">
+                {{ room.name }}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+
+  {% endif %}
+
+</div>
 {% endblock %}

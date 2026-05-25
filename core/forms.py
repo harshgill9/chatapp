@@ -1,6 +1,7 @@
 # core/forms.py
 from django import forms
-from .models import UserProfile
+from .models import Profile
+from .models import Room
 
 class SearchForm(forms.Form):
     query = forms.CharField(label='Search User', max_length=100)
@@ -12,5 +13,17 @@ class SearchForm(forms.Form):
 
 class ProfilePicForm(forms.ModelForm):
     class Meta:
-        model = UserProfile
+        model = Profile
         fields = ['profile_pic']
+
+class ProfileUpdateForm(forms.ModelForm):
+    first_name = forms.CharField(required=False)
+    
+    class Meta:
+        model = Profile
+        fields = ['profile_pic', 'phone_number', 'about']
+
+class RoomImageForm(forms.ModelForm):
+    class Meta:
+        model = Room
+        fields = ['image']

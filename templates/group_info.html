@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+{% block title %}Group Info - {{ room.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto p-6 bg-white dark:bg-gray-900 shadow-xl rounded-2xl text-gray-900 dark:text-gray-100 mt-8">
+
+  <!-- 🏷️ Group Header -->
+  <div class="flex items-center gap-4 mb-6">
+    {% if room.image %}
+      <img src="{{ room.image.url }}" alt="Room Image" class="w-20 h-20 rounded-full object-cover shadow-md">
+    {% else %}
+      <div class="w-20 h-20 bg-indigo-500 text-white flex items-center justify-center rounded-full text-2xl font-bold shadow-md">
+        {{ room.name|slice:":2"|upper }}
+      </div>
+    {% endif %}
+
+    <div>
+      <h2 class="text-2xl font-bold">{{ room.name }}</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Created by: {{ room.created_by.username }}</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Members: {{ room.members.count }}</p>
+    </div>
+  </div>
+
+  <!-- 📝 Group Description -->
+  {% if room.description %}
+  <div class="bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-700 p-4 rounded-lg mb-5">
+    <h3 class="font-semibold text-indigo-700 dark:text-indigo-300 mb-1">📄 Group Description</h3>
+    <p class="text-sm text-gray-700 dark:text-gray-300">{{ room.description }}</p>
+  </div>
+  {% endif %}
+
+  <!-- 🔔 Notification Toggle -->
+  <div class="flex items-center justify-between bg-gray-100 dark:bg-gray-800 p-4 rounded-lg mb-6">
+    <div class="flex items-center gap-2">
+      <span id="mute-status-icon" class="text-green-500 text-xl">🔔</span>
+      <span id="mute-status-text" class="font-medium text-gray-800 dark:text-gray-200">Notifications On</span>
+    </div>
+
+    <label class="relative inline-flex items-center cursor-pointer">
+      <input type="checkbox" id="mute-toggle" class="sr-only peer" onchange="toggleMute(this)">
+      <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-400 rounded-full peer peer-checked:bg-indigo-600 transition"></div>
+      <span class="ml-3 text-sm text-gray-700 dark:text-gray-300">Mute</span>
+    </label>
+  </div>
+
+  {% if request.user == room.created_by %}
+  <!-- 🕓 Pending Join Requests (Visible only to Admin) -->
+  <div class="mb-6">
+    <h3 class="text-lg font-semibold mb-2 text-yellow-600">Pending Join Requests</h3>
+    {% if join_requests %}
+      <ul class="space-y-2">
+        {% for req in join_requests %}
+          <li class="flex justify-between items-center bg-yellow-100 dark:bg-yellow-800 p-2 rounded-md">
+            <span>{{ req.user.username }}</span>
+            <form method="POST" action="{% url 'accept_join_request' req.id %}">
+              {% csrf_token %}
+              <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded">Accept</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-gray-500 text-sm">No pending requests.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- 👥 Members List -->
+  <div class="mb-6">
+    <h3 class="text-lg font-semibold mb-2">Group Members ({{ room.members.count }})</h3>
+    <ul class="space-y-1">
+      {% for member in room.members.all %}
+        <li class="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+          <span>{{ member.username }}</span>
+          {% if member == room.created_by %}
+            <span class="text-xs text-indigo-500 font-semibold">(Admin)</span>
+          {% endif %}
+        </li>
+      {% empty %}
+        <li class="text-gray-500 text-sm">No members found.</li>
+      {% endfor %}
+    </ul>
+  </div>
+  
+  <!-- 🗑️ DELETE ALL GROUP CHAT -->
+  <button
+    class="w-full bg-red-400 hover:bg-red-500 text-white font-semibold py-2 rounded-lg"
+    onclick="clearMyChat({{ room.id }})"
+  >
+    🧹 Clear My Chat Only
+  </button>
+
+
+
+
+  <!-- 📨 Join Request Button -->
+  {% if request.user != room.created_by %}
+    {% if request.user not in room.members.all %}
+      {% if not user_request %}
+        <form method="POST" action="{% url 'send_join_request' room.slug %}">
+          {% csrf_token %}
+          <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg transition mb-4">
+            📨 Request to Join
+          </button>
+        </form>
+      {% elif user_request.status == 'pending' %}
+        <p class="text-center text-gray-500 mb-4">Join request sent ✅ (Pending)</p>
+      {% elif user_request.status == 'rejected' %}
+        <p class="text-center text-red-500 mb-4">Your request was rejected ❌</p>
+      {% elif user_request.status == 'accepted' %}
+        <p class="text-center text-green-500 mb-4">You are now a member 🎉</p>
+      {% endif %}
+    {% endif %}
+  {% endif %}
+
+  <!-- 🚪 Exit / Edit / Delete / Report Buttons -->
+  <div class="space-y-3 mt-8">
+    {% if request.user == room.created_by %}
+      <!-- 👑 Admin Buttons -->
+      <a href="{% url 'edit_room' room.slug %}" 
+         class="block w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg text-center transition">
+         ✏️ Edit Room
+      </a>
+
+      <form action="{% url 'delete_room' room.id %}" method="post" 
+            onsubmit="return confirm('Are you sure you want to delete this group?')">
+        {% csrf_token %}
+        <button type="submit" 
+                class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition">
+          🗑️ Delete Room
+        </button>
+      </form>
+
+    {% else %}
+      <!-- 👥 Normal User Buttons -->
+      <form action="{% url 'exit_group' room.slug %}" method="POST" 
+      onsubmit="return confirm('Are you sure you want to leave this group?')">
+        {% csrf_token %}
+        <button type="submit" 
+                class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition">
+          🚪 Exit Group
+        </button>
+      </form>
+
+      <form action="{% url 'report_group' room.id %}" method="POST" 
+            onsubmit="return confirm('Report this group to admin?')">
+        {% csrf_token %}
+        <button type="submit" 
+                class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 rounded-lg transition">
+          🚨 Report Group
+        </button>
+      </form>
+    {% endif %}
+  </div>
+
+  <!-- 🔙 Back Link -->
+  <div class="mt-6 text-center">
+    <a href="{% url 'home' %}?room={{ room.slug }}" 
+       class="text-indigo-500 hover:underline text-sm">
+      ⬅ Back to Chat
+    </a>
+  </div>
+</div>
+<script>
+    const csrfToken = "{{ csrf_token }}"; 
+</script>
+
+<!-- ✅ JS for Mute toggle -->
+<script>
+  function toggleMute(checkbox) {
+    const isMuted = checkbox.checked;
+    localStorage.setItem("mute_{{ room.slug }}", isMuted);
+
+    const icon = document.getElementById("mute-status-icon");
+    const text = document.getElementById("mute-status-text");
+
+    if (isMuted) {
+      icon.textContent = "🔕";
+      icon.className = "text-red-500 text-xl";
+      text.textContent = "Notifications Off";
+    } else {
+      icon.textContent = "🔔";
+      icon.className = "text-green-500 text-xl";
+      text.textContent = "Notifications On";
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const savedMute = localStorage.getItem("mute_{{ room.slug }}") === "true";
+    const toggle = document.getElementById("mute-toggle");
+    const icon = document.getElementById("mute-status-icon");
+    const text = document.getElementById("mute-status-text");
+
+    toggle.checked = savedMute;
+    if (savedMute) {
+      icon.textContent = "🔕";
+      icon.className = "text-red-500 text-xl";
+      text.textContent = "Notifications Off";
+    } else {
+      icon.textContent = "🔔";
+      icon.className = "text-green-500 text-xl";
+      text.textContent = "Notifications On";
+    }
+  });
+
+// CSRF Cookie getter (backup)
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + "=")) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+function deleteAllMessages(roomId) {
+    if (!confirm("Are you sure you want to clear YOUR chat view?")) return;
+
+    fetch(`/delete-all-messages/${roomId}/`, {
+        method: "POST",
+        headers: { "X-CSRFToken": getCookie("csrftoken") }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === "success") {
+
+            const chatBox = document.getElementById("chat-box");
+            if (chatBox) chatBox.innerHTML = "";
+
+            console.log("Chat cleared locally.");
+        }
+    });
+}
+function clearMyChat(roomId) {
+
+    if (!confirm("Clear chat only for you? Other users will still see messages.")) {
+        return;
+    }
+
+    const token = getCookie("csrftoken");
+
+    fetch(`/hide-my-messages/${roomId}/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": token,
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") {
+            
+            // Chat clear locally
+            const chatBox = document.getElementById("chat-box");
+            if (chatBox) {
+                chatBox.innerHTML = "";
+            }
+
+            console.log("Your chat cleared permanently for you only 👍");
+            alert("Your chat cleared permanently!");
+
+        } else {
+            alert("Error: " + data.message);
+        }
+    })
+    .catch(err => console.error(err));
+}
+
+function clearChatForMe(roomId) {
+
+    if (!confirm("Clear chat only for you? Messages will still be visible to other users.")) {
+        return;
+    }
+
+    const token = getCookie("csrftoken");
+
+    fetch(`/clear-chat-for-me/${roomId}/`, {
+        method: "POST",
+        headers: { "X-CSRFToken": token }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") {
+
+            // Screen se chat hatao
+            const chatBox = document.getElementById("chat-box");
+            if (chatBox) chatBox.innerHTML = "";
+
+            console.log("Your chat cleared locally 👍");
+            alert("Your chat is cleared (only for you).");
+        }
+    });
+}
+
+</script>
+
+{% endblock %}
