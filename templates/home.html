@@ -175,273 +175,386 @@
   </aside>
 
 <main 
-    class="flex-1 overflow-y-auto px-4 md:px-6 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col"
+    class="flex-1 overflow-hidden px-4 md:px-6 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col"
 >
     {% if request.user.is_anonymous %}
+
         <div class="flex flex-col justify-center items-center h-full text-center">
-            <h2 class="text-2xl font-semibold mb-4">Please log in to start chatting</h2>
-            <a href="{% url 'login' %}" class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700">
+            <h2 class="text-2xl font-semibold mb-4">
+                Please log in to start chatting
+            </h2>
+
+            <a href="{% url 'login' %}"
+               class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700">
                 Go to Login
             </a>
         </div>
 
     {% elif selected_room or private_room or selected_user %}
-        
-        <div 
-            x-data="{ 
-                forwardMode: false, 
-                selectedMessages: [], 
-                forwardSelectedMessages() {
-                    console.log('🧩 Selected Messages:', this.selectedMessages);
-                    if (this.selectedMessages.length === 0) {
-                        alert('Select at least one message to forward.');
-                        return;
-                    }
-                    openForwardModal(this.selectedMessages, '{{ request.user.username }}', ''); 
-                    this.forwardMode = false;
-                    this.selectedMessages = [];
+
+    <div 
+        x-data="{ 
+            forwardMode: false, 
+            selectedMessages: [], 
+
+            forwardSelectedMessages() {
+                console.log(this.selectedMessages);
+
+                if (this.selectedMessages.length === 0) {
+                    alert('Select at least one message');
+                    return;
                 }
-            }"
-            class="flex flex-col h-full"
-        >
 
-            <div class="flex items-center gap-3 my-4">
-                {% if selected_user %}
-                    {% if selected_user.profile.profile_pic %}
-                        <img src="{{ selected_user.profile.profile_pic.url }}" alt="DP"
-                             class="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-indigo-400 transition"
-                             onclick="openModal(this.src)">
-                    {% else %}
-                        <div class="w-10 h-10 bg-indigo-500 text-white rounded-full flex items-center justify-center font-bold uppercase">
-                            {{ selected_user.username|first }}
-                        </div>
-                    {% endif %}
-                    <div id="user-{{ selected_user.username }}" class="flex-grow">
-                        <h2 class="text-xl font-bold cursor-pointer" onclick="openUserProfileModal()">
-                            {{ selected_user.first_name|default:selected_user.username }}
-                        </h2>
-                        {% if selected_user.profile.is_online %}
-                            <span class="text-green-500 text-sm">🟢 Online</span>
-                        {% else %}
-                            <span class="text-gray-400 text-sm">⚪ Offline</span>
-                            <span class="text-gray-400 text-sm">Last seen: {{ selected_user.profile.last_seen|naturaltime }}</span>
-                        {% endif %}
-                        <span id="typing-status" class="text-sm text-blue-500 italic ml-2"></span>
-                    </div>
+                openForwardModal(
+                    this.selectedMessages,
+                    '{{ request.user.username }}',
+                    ''
+                );
 
-                {% elif selected_room %}
-                    {% if selected_room.image %}
-                        <img src="{{ selected_room.image.url }}" alt="Room"
-                             class="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-indigo-400 transition"
-                             onclick="openModal(this.src)">
-                    {% else %}
-                        <div class="w-10 h-10 bg-indigo-500 text-white rounded-full flex items-center justify-center font-bold uppercase cursor-pointer">
-                            {{ selected_room.name|slice:":2" }}
-                        </div>
-                    {% endif %}
-                    <div class="flex flex-col flex-grow">
-                      <a href="{% url 'group_info' selected_room.slug %}" class="text-xl font-bold text-green-600 hover:underline flex-grow">
-                          {{ selected_room.name }}
-                      </a>
-                      <span id="typing-status" class="text-sm text-blue-500 italic opacity-80 mt-1"></span>
+                this.forwardMode = false;
+                this.selectedMessages = [];
+            }
+        }"
+        class="flex flex-col h-full overflow-hidden"
+    >
+
+        <!-- TOP HEADER -->
+        <div class="flex items-center gap-3 my-4 shrink-0">
+
+            {% if selected_user %}
+
+                {% if selected_user.profile.profile_pic %}
+                    <img 
+                        src="{{ selected_user.profile.profile_pic.url }}"
+                        alt="DP"
+                        class="w-10 h-10 rounded-full object-cover cursor-pointer"
+                        onclick="openModal(this.src)"
+                    >
+                {% else %}
+                    <div class="w-10 h-10 bg-indigo-500 text-white rounded-full flex items-center justify-center font-bold uppercase">
+                        {{ selected_user.username|first }}
                     </div>
-                {% elif private_room %}
-                    <h2 class="text-xl font-bold flex-grow">Chatting in Private Room</h2>
                 {% endif %}
-            </div>
 
-            <div class="flex flex-col justify-between flex-1 overflow-hidden min-h-0">
-                
-                {% if selected_room %}
-                    {% if request.user == selected_room.created_by or request.user in selected_room.members.all %}
-                        <div id="chat-box"
-                             class="flex-1 overflow-y-auto border dark:border-gray-700 p-4 bg-white dark:bg-gray-800 rounded mb-2 space-y-2">
-                            {% for msg in messages %}
-                                <div class="flex items-start gap-2 {% if msg.sender == request.user %}justify-end{% endif %}">
-                                    <input 
-                                        type="checkbox"
-                                        x-show="forwardMode"
-                                        x-model="selectedMessages"
-                                        value="{{ msg.id }}"
-                                        class="w-4 h-4 mt-2 accent-blue-600 cursor-pointer transition"
-                                    />
+                <div class="flex-grow">
+                    <h2 class="text-xl font-bold">
+                        {{ selected_user.first_name|default:selected_user.username }}
+                    </h2>
 
-                                    <div class="relative group bg-gray-100 dark:bg-gray-700 p-3 rounded-lg max-w-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition">
-
-                                        {% if msg.is_forwarded %}
-                                            <p class="text-xs text-gray-400 italic mb-1">
-                                                Forwarded from {{ msg.original_sender }}
-                                            </p>
-                                        {% endif %}
-
-                                        <p class="text-sm">
-                                            <strong>{{ msg.sender.username }}</strong>: {{ msg.content }}
-                                        </p>
-
-                                        <div class="flex gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                            <button class="hover:text-blue-500">💬 Reply</button>
-                                            <button @click="forwardMode = true; selectedMessages.push('{{ msg.id }}')" class="hover:text-blue-500">📤 Forward</button>
-                                            <button class="hover:text-red-500">🗑️ Delete</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            {% empty %}
-                                <p class="text-center text-gray-400">No messages yet.</p>
-                            {% endfor %}
-                        </div>
-
-                        <!-- <div 
-                            x-show="forwardMode" 
-                            x-transition
-                            class="flex items-center justify-between bg-blue-100 dark:bg-gray-700 p-2 rounded-md mb-2 shadow"
-                        >
-                            <div class="flex items-center gap-3">
-                                <button 
-                                    @click="forwardMode = false; selectedMessages = []" 
-                                    class="text-red-500 font-semibold hover:text-red-600"
-                                >
-                                    ✖ Close
-                                </button>
-                                <span class="text-gray-800 dark:text-gray-200">
-                                    <span x-text="selectedMessages.length"></span> selected
-                                </span>
-                            </div>
-                            <button 
-                                @click="forwardSelectedMessages()" 
-                                class="text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1"
-                            >
-                                <span>Forward</span> 📤
-                            </button>
-                        </div> -->
-
-                        <div class="w-full mt-2">
-                            <form id="chat-form" class="relative w-full">
-                                <input
-                                    type="text"
-                                    id="message-input"
-                                    class="w-full px-4 py-2 rounded-full border border-gray-300 bg-white text-gray-900 focus:outline-none dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
-                                    placeholder="Type a message..."
-                                    autocomplete="off"
-                                    required
-                                />
-                                <button type="submit"
-                                        class="absolute top-1/2 right-1 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white w-9 h-9 flex items-center justify-center rounded-full">
-                                    <i class="fas fa-paper-plane text-sm"></i>
-                                </button>
-                            </form>
-                        </div>
-
+                    {% if selected_user.profile.is_online %}
+                        <span class="text-green-500 text-sm">
+                            🟢 Online
+                        </span>
                     {% else %}
-                        <div class="flex flex-col justify-center items-center h-full text-center">
-                        
-                            {% if join_request and join_request.status == 'pending' %}
-                        
-                                <p class="text-yellow-500 font-medium mb-3">
-                                    Join request sent. Waiting for admin approval.
-                                </p>
-                              
-                                <button
-                                    disabled
-                                    class="bg-yellow-500 text-white px-4 py-2 rounded-full cursor-not-allowed"
-                                >
-                                    Pending
-                                </button>
-                              
-                            {% else %}
-                              
-                                <p class="text-gray-500 mb-3">
-                                    You are not a member of this group.
-                                </p>
-                              
-                                <form
-                                    method="POST"
-                                    action="{% url 'send_join_request' selected_room.slug %}"
-                                >
-                                    {% csrf_token %}
-                              
-                                    <button
-                                        type="submit"
-                                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full transition"
-                                    >
-                                        Send Join Request
-                                    </button>
-                                  
-                                </form>
-                              
-                            {% endif %}
-                              
-                        </div>
+                        <span class="text-gray-400 text-sm">
+                            ⚪ Offline
+                        </span>
                     {% endif %}
-                
-                {% elif selected_user or private_room %}
-                    <div id="chat-box"
-                         class="flex-1 overflow-y-auto border dark:border-gray-700 p-4 bg-white dark:bg-gray-800 rounded mb-2 space-y-2">
+                </div>
+
+            {% elif selected_room %}
+
+                {% if selected_room.image %}
+                    <img 
+                        src="{{ selected_room.image.url }}"
+                        alt="Room"
+                        class="w-10 h-10 rounded-full object-cover cursor-pointer"
+                        onclick="openModal(this.src)"
+                    >
+                {% else %}
+                    <div class="w-10 h-10 bg-indigo-500 text-white rounded-full flex items-center justify-center font-bold uppercase">
+                        {{ selected_room.name|slice:":2" }}
+                    </div>
+                {% endif %}
+
+                <div class="flex flex-col flex-grow">
+                    <a href="{% url 'group_info' selected_room.slug %}"
+                       class="text-xl font-bold text-green-600 hover:underline">
+                        {{ selected_room.name }}
+                    </a>
+
+                    <span id="typing-status"
+                          class="text-sm text-blue-500 italic">
+                    </span>
+                </div>
+
+            {% elif private_room %}
+
+                <h2 class="text-xl font-bold">
+                    Private Chat
+                </h2>
+
+            {% endif %}
+        </div>
+
+
+        <!-- CHAT AREA -->
+        <div class="flex-1 overflow-hidden flex flex-col min-h-0">
+
+            {% if selected_room %}
+                {% if request.user == selected_room.created_by or request.user in selected_room.members.all %}
+
+                    <!-- MESSAGES -->
+                    <div 
+                        id="chat-box"
+                        class="flex-1 overflow-y-auto border dark:border-gray-700 p-4 bg-white dark:bg-gray-800 rounded space-y-3"
+                    >
+
                         {% for msg in messages %}
-                            <div class="flex items-start gap-2 {% if msg.sender == request.user %}justify-end{% endif %}">
-                                <input 
-                                    type="checkbox"
-                                    x-show="forwardMode"
-                                    x-model="selectedMessages"
-                                    value="{{ msg.id }}"
-                                    class="w-4 h-4 mt-2 accent-blue-600 cursor-pointer transition"
-                                />
-                                
-                                <div class="relative group bg-gray-100 dark:bg-gray-700 p-3 rounded-lg max-w-xs hover:bg-gray-200 dark:hover:bg-gray-600 transition">
 
-                                    {% if msg.is_forwarded %}
-                                        <p class="text-xs text-gray-400 italic mb-1">
-                                            Forwarded from {{ msg.original_sender }}
-                                        </p>
-                                    {% endif %}
+                        <div class="flex items-start gap-2 {% if msg.sender == request.user %}justify-end{% endif %}">
 
-                                    <p class="text-sm"><strong>{{ msg.sender.username }}</strong>: {{ msg.content }}</p>
+                            <input
+                                type="checkbox"
+                                x-show="forwardMode"
+                                x-model="selectedMessages"
+                                value="{{ msg.id }}"
+                                class="w-4 h-4 mt-2 accent-blue-600"
+                            >
 
-                                    <div class="flex gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                        <button class="hover:text-blue-500">💬 Reply</button>
-                                        <button @click="forwardMode = true; selectedMessages.push('{{ msg.id }}')" class="hover:text-blue-500">📤 Forward</button>
-                                        <button class="hover:text-red-500">🗑️ Delete</button>
-                                    </div>
+                            <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl max-w-xs">
+
+                                {% if msg.is_forwarded %}
+                                    <p class="text-xs text-gray-400 italic mb-1">
+                                        Forwarded from {{ msg.original_sender }}
+                                    </p>
+                                {% endif %}
+
+                                <p class="text-sm break-words">
+                                    <strong>{{ msg.sender.username }}</strong><br>
+                                    {{ msg.content }}
+                                </p>
+
+                                <div class="flex gap-3 mt-2 text-xs text-gray-500">
+
+                                    <button class="hover:text-blue-500">
+                                        💬 Reply
+                                    </button>
+
+                                    <button
+                                        @click="forwardMode = true; selectedMessages.push('{{ msg.id }}')"
+                                        class="hover:text-blue-500"
+                                    >
+                                        📤 Forward
+                                    </button>
+
+                                    <button class="hover:text-red-500">
+                                        🗑️ Delete
+                                    </button>
+
                                 </div>
                             </div>
+                        </div>
+
                         {% empty %}
-                            <p class="text-center text-gray-400">No messages yet.</p>
+
+                        <p class="text-center text-gray-400">
+                            No messages yet.
+                        </p>
+
                         {% endfor %}
                     </div>
 
-                    <div class="w-full mt-2">
-                        <form id="chat-form" class="relative w-full">
-                            <input
-                                type="text"
-                                id="message-input"
-                                class="w-full px-4 py-2 rounded-full border border-gray-300 bg-white text-gray-900 focus:outline-none dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
-                                placeholder="Type a message..."
-                                autocomplete="off"
-                                required
-                            />
-                            <button type="submit"
-                                    class="absolute top-1/2 right-1 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white w-9 h-9 flex items-center justify-center rounded-full">
-                                <i class="fas fa-paper-plane text-sm"></i>
+                {% else %}
+
+                    <!-- JOIN REQUEST -->
+                    <div class="flex flex-col justify-center items-center h-full text-center">
+
+                        {% if join_request and join_request.status == 'pending' %}
+
+                            <p class="text-yellow-500 font-medium mb-3">
+                                Join request sent. Waiting for admin approval.
+                            </p>
+
+                            <button
+                                disabled
+                                class="bg-yellow-500 text-white px-4 py-2 rounded-full"
+                            >
+                                Pending
                             </button>
-                        </form>
+
+                        {% else %}
+
+                            <p class="text-gray-500 mb-3">
+                                You are not a member of this group.
+                            </p>
+
+                            <form method="POST"
+                                  action="{% url 'send_join_request' selected_room.slug %}">
+
+                                {% csrf_token %}
+
+                                <button
+                                    type="submit"
+                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full"
+                                >
+                                    Send Join Request
+                                </button>
+
+                            </form>
+
+                        {% endif %}
                     </div>
+
                 {% endif %}
+
+            {% elif selected_user or private_room %}
+
+                <!-- PRIVATE CHAT -->
+                <div 
+                    id="chat-box"
+                    class="flex-1 overflow-y-auto border dark:border-gray-700 p-4 bg-white dark:bg-gray-800 rounded space-y-3"
+                >
+
+                    {% for msg in messages %}
+
+                    <div class="flex items-start gap-2 {% if msg.sender == request.user %}justify-end{% endif %}">
+
+                        <input
+                            type="checkbox"
+                            x-show="forwardMode"
+                            x-model="selectedMessages"
+                            value="{{ msg.id }}"
+                            class="w-4 h-4 mt-2 accent-blue-600"
+                        >
+
+                        <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl max-w-xs">
+
+                            {% if msg.is_forwarded %}
+                                <p class="text-xs text-gray-400 italic mb-1">
+                                    Forwarded from {{ msg.original_sender }}
+                                </p>
+                            {% endif %}
+
+                            <p class="text-sm break-words">
+                                <strong>{{ msg.sender.username }}</strong><br>
+                                {{ msg.content }}
+                            </p>
+
+                            <div class="flex gap-3 mt-2 text-xs text-gray-500">
+
+                                <button class="hover:text-blue-500">
+                                    💬 Reply
+                                </button>
+
+                                <button
+                                    @click="forwardMode = true; selectedMessages.push('{{ msg.id }}')"
+                                    class="hover:text-blue-500"
+                                >
+                                    📤 Forward
+                                </button>
+
+                                <button class="hover:text-red-500">
+                                    🗑️ Delete
+                                </button>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    {% empty %}
+
+                    <p class="text-center text-gray-400">
+                        No messages yet.
+                    </p>
+
+                    {% endfor %}
+                </div>
+
+            {% endif %}
+
+
+            <!-- FIXED INPUT -->
+            {% if selected_room or selected_user or private_room %}
+
+            <!-- REPLY + INPUT WRAPPER -->
+            <div class="w-full overflow-hidden rounded-[28px] border border-blue-300 bg-gray-200 dark:border-blue-600 dark:bg-gray-600">
+            
+              <!-- REPLY BOX -->
+              <div 
+                  id="reply-preview"
+                  class="hidden bg-white text-gray-800 border-b border-gray-300 px-4 py-2 rounded-t-2xl flex items-center justify-between dark:bg-gray-700 dark:text-white dark:border-gray-600"
+              >
+                          
+                  <!-- LEFT SIDE -->
+                  <div class="flex items-center flex-1 min-w-0 overflow-hidden">
+                  
+                      <!-- BLUE LINE -->
+                      <div class="w-1 self-stretch bg-blue-500 rounded-full mr-3 shrink-0"></div>
+                  
+                      <!-- REPLY TEXT -->
+                      <span
+                          id="reply-text"
+                          class="block flex-1 min-w-0 truncate text-sm"
+                      ></span>
+                  
+                  </div>
+                
+                  <!-- CLOSE BUTTON -->
+                  <button
+                      type="button"
+                      onclick="cancelReply()"
+                      class="text-gray-400 hover:text-red-400 text-xl ml-3 shrink-0"
+                  >
+                      ×
+                  </button>
+                
+              </div>
+
+                <!-- INPUT -->
+                <form id="chat-form" class="relative w-full">
+                
+                    <input
+                        type="text"
+                        id="message-input"
+                        placeholder="Type a message..."
+                        autocomplete="off"
+                        class="w-full px-4 py-3 rounded-b-2xl bg-gray-100 text-gray-800 dark:text-gray-300 dark:bg-gray-700 focus:outline-none focus:ring-0 border-0"
+                    >
+                
+                    <button
+                        type="submit"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 rounded-full flex items-center justify-center"
+                    >
+                        <i class="fas fa-paper-plane text-sm"></i>
+                    </button>
+                  
+                </form>
+              
             </div>
 
-        </div> 
-    
+            {% endif %}
+
+        </div>
+    </div>
+
     {% elif error_message %}
+
         <div class="text-center my-6">
             {% for err in error_message %}
-                <p class="text-red-500 mb-2">{{ err }}</p>
+                <p class="text-red-500 mb-2">
+                    {{ err }}
+                </p>
             {% endfor %}
-            <a href="." class="text-indigo-500 hover:underline">Go to Home</a>
+
+            <a href="."
+               class="text-indigo-500 hover:underline">
+                Go to Home
+            </a>
         </div>
 
     {% else %}
+
         <div class="flex flex-col justify-center items-center h-full text-center">
-            <h2 class="text-2xl font-semibold mb-2">Select a Room</h2>
-            <p class="text-gray-500">Click on a user or chat room in the sidebar to start chatting.</p>
+            <h2 class="text-2xl font-semibold mb-2">
+                Select a Room
+            </h2>
+
+            <p class="text-gray-500">
+                Click on a user or room to start chatting.
+            </p>
         </div>
+
     {% endif %}
 </main>
 
@@ -580,6 +693,17 @@
 
   const roomsContainer =
       document.getElementById("rooms-container");
+
+  window.cancelReply = function () {
+      const replyBox = document.getElementById("reply-preview");
+      if (!replyBox) return;
+      replyBox.classList.add("hidden");
+
+      replyBox.removeAttribute("data-reply-id");
+      replyBox.removeAttribute("data-reply-name");
+
+      document.getElementById("reply-text").innerHTML = "";
+  };
 
   searchInput?.addEventListener("input", async () => {
 
@@ -1292,7 +1416,8 @@
 
     // 🔹 Reset input + reply box
     messageInput.value = "";
-    if (replyBox) replyBox.remove();
+    // if (replyBox) replyBox.remove();
+    cancelReply();
     sendStopTyping();
   });
 
@@ -1484,23 +1609,34 @@
     `;
   
     dropdown.children[0].addEventListener("click", () => {
-      dropdown.classList.add("hidden");
-      document.querySelector("#reply-preview")?.remove();
-    
-      const replyBox = document.createElement("div");
-      replyBox.id = "reply-preview";
-      replyBox.className =
-        "flex items-center justify-between px-3 py-2 mb-2 bg-gray-100 dark:bg-gray-700 rounded border-l-4 border-blue-500";
-      replyBox.setAttribute("data-reply-id", content.id); // ✅ store message id
-      replyBox.setAttribute("data-reply-name", username);
-      replyBox.innerHTML = `
-        <span class="text-sm text-gray-700 dark:text-gray-200 truncate max-w-[80%]">
-          ${content.message || content}
-        </span>
-        <button id="cancel-reply" class="text-gray-500 hover:text-red-500 text-sm font-bold ml-2">✕</button>
-      `;
-      messageInput.parentNode.insertBefore(replyBox, messageInput);
-      document.querySelector("#cancel-reply").addEventListener("click", () => replyBox.remove());
+        
+        dropdown.classList.add("hidden");
+        
+        const replyBox = document.getElementById("reply-preview");
+        const replyText = document.getElementById("reply-text");
+        
+        if (!replyBox || !replyText) {
+            console.error("Reply preview elements not found");
+            return;
+        }
+      
+        // Show reply box
+        replyBox.classList.remove("hidden");
+      
+        // Store reply info
+        replyBox.setAttribute("data-reply-id", content.id);
+        replyBox.setAttribute("data-reply-name", username);
+      
+        // Display username + message
+        replyText.innerHTML = `
+            <div>
+                <div class="font-semibold text-red-500">${username}</div>
+                <div class="truncate text-sm">
+                    ${content.message || content}
+                </div>
+            </div>
+        `;
+          
     });
   
     dropdown.children[1].addEventListener("click", () =>
